@@ -2,13 +2,13 @@
  "cells": [
   {
    "cell_type": "markdown",
-   "id": "290f6725",
+   "id": "6db19cd0",
    "metadata": {
     "papermill": {
-     "duration": 0.010867,
-     "end_time": "2024-09-25T01:23:20.440027",
+     "duration": 0.009976,
+     "end_time": "2024-09-28T02:13:42.680774",
      "exception": false,
-     "start_time": "2024-09-25T01:23:20.429160",
+     "start_time": "2024-09-28T02:13:42.670798",
      "status": "completed"
     },
     "tags": []
@@ -21,13 +21,13 @@
   },
   {
    "cell_type": "markdown",
-   "id": "b3106b04",
+   "id": "c343d34b",
    "metadata": {
     "papermill": {
-     "duration": 0.010088,
-     "end_time": "2024-09-25T01:23:20.460637",
+     "duration": 0.008748,
+     "end_time": "2024-09-28T02:13:42.698665",
      "exception": false,
-     "start_time": "2024-09-25T01:23:20.450549",
+     "start_time": "2024-09-28T02:13:42.689917",
      "status": "completed"
     },
     "tags": []
@@ -41,19 +41,19 @@
   {
    "cell_type": "code",
    "execution_count": 1,
-   "id": "9671cd04",
+   "id": "1afbc57c",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-09-25T01:23:20.484381Z",
-     "iopub.status.busy": "2024-09-25T01:23:20.483936Z",
-     "iopub.status.idle": "2024-09-25T01:23:47.254240Z",
-     "shell.execute_reply": "2024-09-25T01:23:47.253208Z"
+     "iopub.execute_input": "2024-09-28T02:13:42.717898Z",
+     "iopub.status.busy": "2024-09-28T02:13:42.717519Z",
+     "iopub.status.idle": "2024-09-28T02:14:08.435590Z",
+     "shell.execute_reply": "2024-09-28T02:14:08.434340Z"
     },
     "papermill": {
-     "duration": 26.784357,
-     "end_time": "2024-09-25T01:23:47.256746",
+     "duration": 25.730447,
+     "end_time": "2024-09-28T02:14:08.437998",
      "exception": false,
-     "start_time": "2024-09-25T01:23:20.472389",
+     "start_time": "2024-09-28T02:13:42.707551",
      "status": "completed"
     },
     "tags": []
@@ -68,19 +68,19 @@
   {
    "cell_type": "code",
    "execution_count": 2,
-   "id": "43b72a2b",
+   "id": "7ea28ba3",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-09-25T01:23:47.278985Z",
-     "iopub.status.busy": "2024-09-25T01:23:47.278650Z",
-     "iopub.status.idle": "2024-09-25T01:23:47.283803Z",
-     "shell.execute_reply": "2024-09-25T01:23:47.282912Z"
+     "iopub.execute_input": "2024-09-28T02:14:08.458792Z",
+     "iopub.status.busy": "2024-09-28T02:14:08.458448Z",
+     "iopub.status.idle": "2024-09-28T02:14:08.463329Z",
+     "shell.execute_reply": "2024-09-28T02:14:08.462524Z"
     },
     "papermill": {
-     "duration": 0.01868,
-     "end_time": "2024-09-25T01:23:47.285936",
+     "duration": 0.017075,
+     "end_time": "2024-09-28T02:14:08.465339",
      "exception": false,
-     "start_time": "2024-09-25T01:23:47.267256",
+     "start_time": "2024-09-28T02:14:08.448264",
      "status": "completed"
     },
     "tags": []
@@ -97,19 +97,19 @@
   {
    "cell_type": "code",
    "execution_count": 3,
-   "id": "1c0e591f",
+   "id": "1d3d43b8",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-09-25T01:23:47.307680Z",
-     "iopub.status.busy": "2024-09-25T01:23:47.307350Z",
-     "iopub.status.idle": "2024-09-25T01:24:56.657333Z",
-     "shell.execute_reply": "2024-09-25T01:24:56.656394Z"
+     "iopub.execute_input": "2024-09-28T02:14:08.484536Z",
+     "iopub.status.busy": "2024-09-28T02:14:08.484223Z",
+     "iopub.status.idle": "2024-09-28T02:15:20.166723Z",
+     "shell.execute_reply": "2024-09-28T02:15:20.165823Z"
     },
     "papermill": {
-     "duration": 69.363427,
-     "end_time": "2024-09-25T01:24:56.659393",
+     "duration": 71.694377,
+     "end_time": "2024-09-28T02:15:20.168842",
      "exception": false,
-     "start_time": "2024-09-25T01:23:47.295966",
+     "start_time": "2024-09-28T02:14:08.474465",
      "status": "completed"
     },
     "tags": []
@@ -258,19 +258,19 @@
   {
    "cell_type": "code",
    "execution_count": 4,
-   "id": "b9d3bdc6",
+   "id": "e287aad6",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-09-25T01:24:56.684768Z",
-     "iopub.status.busy": "2024-09-25T01:24:56.684133Z",
-     "iopub.status.idle": "2024-09-25T01:25:11.284280Z",
-     "shell.execute_reply": "2024-09-25T01:25:11.283332Z"
+     "iopub.execute_input": "2024-09-28T02:15:20.191054Z",
+     "iopub.status.busy": "2024-09-28T02:15:20.190549Z",
+     "iopub.status.idle": "2024-09-28T02:15:34.755893Z",
+     "shell.execute_reply": "2024-09-28T02:15:34.754930Z"
     },
     "papermill": {
-     "duration": 14.615272,
-     "end_time": "2024-09-25T01:25:11.286578",
+     "duration": 14.578712,
+     "end_time": "2024-09-28T02:15:34.758019",
      "exception": false,
-     "start_time": "2024-09-25T01:24:56.671306",
+     "start_time": "2024-09-28T02:15:20.179307",
      "status": "completed"
     },
     "tags": []
@@ -302,19 +302,19 @@
   {
    "cell_type": "code",
    "execution_count": 5,
-   "id": "b15ad897",
+   "id": "81dfa548",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-09-25T01:25:11.310941Z",
-     "iopub.status.busy": "2024-09-25T01:25:11.310587Z",
-     "iopub.status.idle": "2024-09-25T01:25:16.067893Z",
-     "shell.execute_reply": "2024-09-25T01:25:16.066910Z"
+     "iopub.execute_input": "2024-09-28T02:15:34.780330Z",
+     "iopub.status.busy": "2024-09-28T02:15:34.779663Z",
+     "iopub.status.idle": "2024-09-28T02:15:39.920264Z",
+     "shell.execute_reply": "2024-09-28T02:15:39.919347Z"
     },
     "papermill": {
-     "duration": 4.772052,
-     "end_time": "2024-09-25T01:25:16.070015",
+     "duration": 5.154047,
+     "end_time": "2024-09-28T02:15:39.922509",
      "exception": false,
-     "start_time": "2024-09-25T01:25:11.297963",
+     "start_time": "2024-09-28T02:15:34.768462",
      "status": "completed"
     },
     "tags": []
@@ -346,19 +346,19 @@
   {
    "cell_type": "code",
    "execution_count": 6,
-   "id": "cda1917d",
+   "id": "4275aeb8",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-09-25T01:25:16.095201Z",
-     "iopub.status.busy": "2024-09-25T01:25:16.094607Z",
-     "iopub.status.idle": "2024-09-25T01:25:21.348848Z",
-     "shell.execute_reply": "2024-09-25T01:25:21.347857Z"
+     "iopub.execute_input": "2024-09-28T02:15:39.945331Z",
+     "iopub.status.busy": "2024-09-28T02:15:39.944967Z",
+     "iopub.status.idle": "2024-09-28T02:15:45.647626Z",
+     "shell.execute_reply": "2024-09-28T02:15:45.646602Z"
     },
     "papermill": {
-     "duration": 5.26936,
-     "end_time": "2024-09-25T01:25:21.351148",
+     "duration": 5.716728,
+     "end_time": "2024-09-28T02:15:45.650130",
      "exception": false,
-     "start_time": "2024-09-25T01:25:16.081788",
+     "start_time": "2024-09-28T02:15:39.933402",
      "status": "completed"
     },
     "tags": []
@@ -392,13 +392,13 @@
   },
   {
    "cell_type": "markdown",
-   "id": "6a9a2888",
+   "id": "7d2e385f",
    "metadata": {
     "papermill": {
-     "duration": 0.01126,
-     "end_time": "2024-09-25T01:25:21.373986",
+     "duration": 0.010653,
+     "end_time": "2024-09-28T02:15:45.671557",
      "exception": false,
-     "start_time": "2024-09-25T01:25:21.362726",
+     "start_time": "2024-09-28T02:15:45.660904",
      "status": "completed"
     },
     "tags": []
@@ -412,19 +412,19 @@
   {
    "cell_type": "code",
    "execution_count": 7,
-   "id": "17230a61",
+   "id": "bae021c0",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-09-25T01:25:21.398783Z",
-     "iopub.status.busy": "2024-09-25T01:25:21.397933Z",
-     "iopub.status.idle": "2024-09-25T01:25:33.417772Z",
-     "shell.execute_reply": "2024-09-25T01:25:33.416491Z"
+     "iopub.execute_input": "2024-09-28T02:15:45.693960Z",
+     "iopub.status.busy": "2024-09-28T02:15:45.693610Z",
+     "iopub.status.idle": "2024-09-28T02:15:57.336705Z",
+     "shell.execute_reply": "2024-09-28T02:15:57.335672Z"
     },
     "papermill": {
-     "duration": 12.034808,
-     "end_time": "2024-09-25T01:25:33.419995",
+     "duration": 11.657043,
+     "end_time": "2024-09-28T02:15:57.339168",
      "exception": false,
-     "start_time": "2024-09-25T01:25:21.385187",
+     "start_time": "2024-09-28T02:15:45.682125",
      "status": "completed"
     },
     "tags": []
@@ -447,19 +447,19 @@
   {
    "cell_type": "code",
    "execution_count": 8,
-   "id": "3dda240a",
+   "id": "3d7a3483",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-09-25T01:25:33.445074Z",
-     "iopub.status.busy": "2024-09-25T01:25:33.444673Z",
-     "iopub.status.idle": "2024-09-25T01:25:36.820372Z",
-     "shell.execute_reply": "2024-09-25T01:25:36.819386Z"
+     "iopub.execute_input": "2024-09-28T02:15:57.362247Z",
+     "iopub.status.busy": "2024-09-28T02:15:57.361891Z",
+     "iopub.status.idle": "2024-09-28T02:16:00.670052Z",
+     "shell.execute_reply": "2024-09-28T02:16:00.669115Z"
     },
     "papermill": {
-     "duration": 3.39078,
-     "end_time": "2024-09-25T01:25:36.822625",
+     "duration": 3.322278,
+     "end_time": "2024-09-28T02:16:00.672309",
      "exception": false,
-     "start_time": "2024-09-25T01:25:33.431845",
+     "start_time": "2024-09-28T02:15:57.350031",
      "status": "completed"
     },
     "tags": []
@@ -650,13 +650,13 @@
   },
   {
    "cell_type": "markdown",
-   "id": "303afde7",
+   "id": "491db38c",
    "metadata": {
     "papermill": {
-     "duration": 0.011619,
-     "end_time": "2024-09-25T01:25:36.846962",
+     "duration": 0.010777,
+     "end_time": "2024-09-28T02:16:00.694603",
      "exception": false,
-     "start_time": "2024-09-25T01:25:36.835343",
+     "start_time": "2024-09-28T02:16:00.683826",
      "status": "completed"
     },
     "tags": []
@@ -668,19 +668,19 @@
   {
    "cell_type": "code",
    "execution_count": 9,
-   "id": "0d46cc66",
+   "id": "27773f42",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-09-25T01:25:36.872161Z",
-     "iopub.status.busy": "2024-09-25T01:25:36.871816Z",
-     "iopub.status.idle": "2024-09-25T01:25:37.027264Z",
-     "shell.execute_reply": "2024-09-25T01:25:37.026266Z"
+     "iopub.execute_input": "2024-09-28T02:16:00.718818Z",
+     "iopub.status.busy": "2024-09-28T02:16:00.718500Z",
+     "iopub.status.idle": "2024-09-28T02:16:00.867290Z",
+     "shell.execute_reply": "2024-09-28T02:16:00.866361Z"
     },
     "papermill": {
-     "duration": 0.170869,
-     "end_time": "2024-09-25T01:25:37.029549",
+     "duration": 0.163252,
+     "end_time": "2024-09-28T02:16:00.869573",
      "exception": false,
-     "start_time": "2024-09-25T01:25:36.858680",
+     "start_time": "2024-09-28T02:16:00.706321",
      "status": "completed"
     },
     "tags": []
@@ -832,13 +832,13 @@
   },
   {
    "cell_type": "markdown",
-   "id": "4f270d91",
+   "id": "ae24187c",
    "metadata": {
     "papermill": {
-     "duration": 0.014269,
-     "end_time": "2024-09-25T01:25:37.055923",
+     "duration": 0.010645,
+     "end_time": "2024-09-28T02:16:00.891960",
      "exception": false,
-     "start_time": "2024-09-25T01:25:37.041654",
+     "start_time": "2024-09-28T02:16:00.881315",
      "status": "completed"
     },
     "tags": []
@@ -850,19 +850,19 @@
   {
    "cell_type": "code",
    "execution_count": 10,
-   "id": "a124e0f0",
+   "id": "00ce8c9a",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-09-25T01:25:37.081274Z",
-     "iopub.status.busy": "2024-09-25T01:25:37.080909Z",
-     "iopub.status.idle": "2024-09-25T01:25:37.099975Z",
-     "shell.execute_reply": "2024-09-25T01:25:37.099087Z"
+     "iopub.execute_input": "2024-09-28T02:16:00.914888Z",
+     "iopub.status.busy": "2024-09-28T02:16:00.914586Z",
+     "iopub.status.idle": "2024-09-28T02:16:00.932201Z",
+     "shell.execute_reply": "2024-09-28T02:16:00.931389Z"
     },
     "papermill": {
-     "duration": 0.034636,
-     "end_time": "2024-09-25T01:25:37.102589",
+     "duration": 0.03142,
+     "end_time": "2024-09-28T02:16:00.934322",
      "exception": false,
-     "start_time": "2024-09-25T01:25:37.067953",
+     "start_time": "2024-09-28T02:16:00.902902",
      "status": "completed"
     },
     "tags": []
@@ -933,19 +933,19 @@
   {
    "cell_type": "code",
    "execution_count": 11,
-   "id": "68b33332",
+   "id": "528711a9",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-09-25T01:25:37.128871Z",
-     "iopub.status.busy": "2024-09-25T01:25:37.128441Z",
-     "iopub.status.idle": "2024-09-25T01:25:37.134436Z",
-     "shell.execute_reply": "2024-09-25T01:25:37.133425Z"
+     "iopub.execute_input": "2024-09-28T02:16:00.957499Z",
+     "iopub.status.busy": "2024-09-28T02:16:00.957164Z",
+     "iopub.status.idle": "2024-09-28T02:16:00.962594Z",
+     "shell.execute_reply": "2024-09-28T02:16:00.961633Z"
     },
     "papermill": {
-     "duration": 0.021505,
-     "end_time": "2024-09-25T01:25:37.136465",
+     "duration": 0.019084,
+     "end_time": "2024-09-28T02:16:00.964455",
      "exception": false,
-     "start_time": "2024-09-25T01:25:37.114960",
+     "start_time": "2024-09-28T02:16:00.945371",
      "status": "completed"
     },
     "tags": []
@@ -970,19 +970,19 @@
   {
    "cell_type": "code",
    "execution_count": 12,
-   "id": "a3dd7ac8",
+   "id": "64ba2b03",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-09-25T01:25:37.162157Z",
-     "iopub.status.busy": "2024-09-25T01:25:37.161832Z",
-     "iopub.status.idle": "2024-09-25T01:25:37.257111Z",
-     "shell.execute_reply": "2024-09-25T01:25:37.255916Z"
+     "iopub.execute_input": "2024-09-28T02:16:00.988229Z",
+     "iopub.status.busy": "2024-09-28T02:16:00.987588Z",
+     "iopub.status.idle": "2024-09-28T02:16:01.077302Z",
+     "shell.execute_reply": "2024-09-28T02:16:01.076237Z"
     },
     "papermill": {
-     "duration": 0.110246,
-     "end_time": "2024-09-25T01:25:37.259129",
+     "duration": 0.103478,
+     "end_time": "2024-09-28T02:16:01.079166",
      "exception": false,
-     "start_time": "2024-09-25T01:25:37.148883",
+     "start_time": "2024-09-28T02:16:00.975688",
      "status": "completed"
     },
     "tags": []
@@ -1025,19 +1025,19 @@
   {
    "cell_type": "code",
    "execution_count": 13,
-   "id": "1ce00c90",
+   "id": "1fdce0e7",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-09-25T01:25:37.285370Z",
-     "iopub.status.busy": "2024-09-25T01:25:37.285035Z",
-     "iopub.status.idle": "2024-09-25T01:25:37.295575Z",
-     "shell.execute_reply": "2024-09-25T01:25:37.294723Z"
+     "iopub.execute_input": "2024-09-28T02:16:01.103317Z",
+     "iopub.status.busy": "2024-09-28T02:16:01.102636Z",
+     "iopub.status.idle": "2024-09-28T02:16:01.113790Z",
+     "shell.execute_reply": "2024-09-28T02:16:01.112926Z"
     },
     "papermill": {
-     "duration": 0.025738,
-     "end_time": "2024-09-25T01:25:37.297474",
+     "duration": 0.025119,
+     "end_time": "2024-09-28T02:16:01.115683",
      "exception": false,
-     "start_time": "2024-09-25T01:25:37.271736",
+     "start_time": "2024-09-28T02:16:01.090564",
      "status": "completed"
     },
     "tags": []
@@ -1062,19 +1062,19 @@
   {
    "cell_type": "code",
    "execution_count": 14,
-   "id": "c4979a66",
+   "id": "f528aeb5",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-09-25T01:25:37.324797Z",
-     "iopub.status.busy": "2024-09-25T01:25:37.324395Z",
-     "iopub.status.idle": "2024-09-25T01:25:37.330242Z",
-     "shell.execute_reply": "2024-09-25T01:25:37.329433Z"
+     "iopub.execute_input": "2024-09-28T02:16:01.139545Z",
+     "iopub.status.busy": "2024-09-28T02:16:01.139176Z",
+     "iopub.status.idle": "2024-09-28T02:16:01.144531Z",
+     "shell.execute_reply": "2024-09-28T02:16:01.143646Z"
     },
     "papermill": {
-     "duration": 0.022435,
-     "end_time": "2024-09-25T01:25:37.332257",
+     "duration": 0.019433,
+     "end_time": "2024-09-28T02:16:01.146458",
      "exception": false,
-     "start_time": "2024-09-25T01:25:37.309822",
+     "start_time": "2024-09-28T02:16:01.127025",
      "status": "completed"
     },
     "tags": []
@@ -1095,13 +1095,13 @@
   },
   {
    "cell_type": "markdown",
-   "id": "93ee3058",
+   "id": "cef4d303",
    "metadata": {
     "papermill": {
-     "duration": 0.012892,
-     "end_time": "2024-09-25T01:25:37.358203",
+     "duration": 0.011119,
+     "end_time": "2024-09-28T02:16:01.168934",
      "exception": false,
-     "start_time": "2024-09-25T01:25:37.345311",
+     "start_time": "2024-09-28T02:16:01.157815",
      "status": "completed"
     },
     "tags": []
@@ -1115,19 +1115,19 @@
   {
    "cell_type": "code",
    "execution_count": 15,
-   "id": "1811d3d3",
+   "id": "080f17b4",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-09-25T01:25:37.385770Z",
-     "iopub.status.busy": "2024-09-25T01:25:37.385255Z",
-     "iopub.status.idle": "2024-09-25T01:25:57.511333Z",
-     "shell.execute_reply": "2024-09-25T01:25:57.510446Z"
+     "iopub.execute_input": "2024-09-28T02:16:01.193338Z",
+     "iopub.status.busy": "2024-09-28T02:16:01.192478Z",
+     "iopub.status.idle": "2024-09-28T02:16:21.840204Z",
+     "shell.execute_reply": "2024-09-28T02:16:21.838708Z"
     },
     "papermill": {
-     "duration": 20.142791,
-     "end_time": "2024-09-25T01:25:57.513565",
+     "duration": 20.662108,
+     "end_time": "2024-09-28T02:16:21.842414",
      "exception": false,
-     "start_time": "2024-09-25T01:25:37.370774",
+     "start_time": "2024-09-28T02:16:01.180306",
      "status": "completed"
     },
     "tags": []
@@ -1178,13 +1178,13 @@
   },
   {
    "cell_type": "markdown",
-   "id": "5bb8e0f6",
+   "id": "f9b7d542",
    "metadata": {
     "papermill": {
-     "duration": 0.012658,
-     "end_time": "2024-09-25T01:25:57.539581",
+     "duration": 0.011225,
+     "end_time": "2024-09-28T02:16:21.865494",
      "exception": false,
-     "start_time": "2024-09-25T01:25:57.526923",
+     "start_time": "2024-09-28T02:16:21.854269",
      "status": "completed"
     },
     "tags": []
@@ -1198,19 +1198,19 @@
   {
    "cell_type": "code",
    "execution_count": 16,
-   "id": "89d8c593",
+   "id": "3ec2f6b1",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-09-25T01:25:57.566279Z",
-     "iopub.status.busy": "2024-09-25T01:25:57.565814Z",
-     "iopub.status.idle": "2024-09-25T01:26:08.425627Z",
-     "shell.execute_reply": "2024-09-25T01:26:08.424500Z"
+     "iopub.execute_input": "2024-09-28T02:16:21.889807Z",
+     "iopub.status.busy": "2024-09-28T02:16:21.889146Z",
+     "iopub.status.idle": "2024-09-28T02:16:22.478436Z",
+     "shell.execute_reply": "2024-09-28T02:16:22.477510Z"
     },
     "papermill": {
-     "duration": 10.875835,
-     "end_time": "2024-09-25T01:26:08.427782",
+     "duration": 0.603707,
+     "end_time": "2024-09-28T02:16:22.480584",
      "exception": false,
-     "start_time": "2024-09-25T01:25:57.551947",
+     "start_time": "2024-09-28T02:16:21.876877",
      "status": "completed"
     },
     "tags": []
@@ -1220,12 +1220,12 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "4860\n"
+      "400\n"
      ]
     }
    ],
    "source": [
-    "train_set = get_train_set(df, n=1000) # Lets train on the first 1k pgns\n",
+    "train_set = get_train_set(df, n=100) # Lets train on the first n pgns\n",
     "\n",
     "print(len(train_set))"
    ]
@@ -1233,19 +1233,19 @@
   {
    "cell_type": "code",
    "execution_count": 17,
-   "id": "b8308204",
+   "id": "3c1d961d",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-09-25T01:26:08.454303Z",
-     "iopub.status.busy": "2024-09-25T01:26:08.453983Z",
-     "iopub.status.idle": "2024-09-25T01:26:08.460022Z",
-     "shell.execute_reply": "2024-09-25T01:26:08.459166Z"
+     "iopub.execute_input": "2024-09-28T02:16:22.505397Z",
+     "iopub.status.busy": "2024-09-28T02:16:22.504845Z",
+     "iopub.status.idle": "2024-09-28T02:16:22.510682Z",
+     "shell.execute_reply": "2024-09-28T02:16:22.509796Z"
     },
     "papermill": {
-     "duration": 0.021513,
-     "end_time": "2024-09-25T01:26:08.461844",
+     "duration": 0.020239,
+     "end_time": "2024-09-28T02:16:22.512686",
      "exception": false,
-     "start_time": "2024-09-25T01:26:08.440331",
+     "start_time": "2024-09-28T02:16:22.492447",
      "status": "completed"
     },
     "tags": []
@@ -1276,19 +1276,19 @@
   {
    "cell_type": "code",
    "execution_count": 18,
-   "id": "37a4d062",
+   "id": "3786cb44",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-09-25T01:26:08.489336Z",
-     "iopub.status.busy": "2024-09-25T01:26:08.488775Z",
-     "iopub.status.idle": "2024-09-25T01:26:08.783331Z",
-     "shell.execute_reply": "2024-09-25T01:26:08.782381Z"
+     "iopub.execute_input": "2024-09-28T02:16:22.537277Z",
+     "iopub.status.busy": "2024-09-28T02:16:22.537004Z",
+     "iopub.status.idle": "2024-09-28T02:16:22.804016Z",
+     "shell.execute_reply": "2024-09-28T02:16:22.803100Z"
     },
     "papermill": {
-     "duration": 0.310377,
-     "end_time": "2024-09-25T01:26:08.785253",
+     "duration": 0.28157,
+     "end_time": "2024-09-28T02:16:22.805978",
      "exception": false,
-     "start_time": "2024-09-25T01:26:08.474876",
+     "start_time": "2024-09-28T02:16:22.524408",
      "status": "completed"
     },
     "tags": []
@@ -1427,19 +1427,19 @@
   {
    "cell_type": "code",
    "execution_count": 19,
-   "id": "9a630b3c",
+   "id": "774baeaf",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-09-25T01:26:08.817577Z",
-     "iopub.status.busy": "2024-09-25T01:26:08.816554Z",
-     "iopub.status.idle": "2024-09-25T02:25:31.799760Z",
-     "shell.execute_reply": "2024-09-25T02:25:31.798842Z"
+     "iopub.execute_input": "2024-09-28T02:16:22.833293Z",
+     "iopub.status.busy": "2024-09-28T02:16:22.832993Z",
+     "iopub.status.idle": "2024-09-28T02:21:45.904386Z",
+     "shell.execute_reply": "2024-09-28T02:21:45.903342Z"
     },
     "papermill": {
-     "duration": 3563.00125,
-     "end_time": "2024-09-25T02:25:31.801672",
+     "duration": 323.087333,
+     "end_time": "2024-09-28T02:21:45.906519",
      "exception": false,
-     "start_time": "2024-09-25T01:26:08.800422",
+     "start_time": "2024-09-28T02:16:22.819186",
      "status": "completed"
     },
     "tags": []
@@ -1449,13 +1449,13 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "\u001b[1m4860/4860\u001b[0m \u001b[32m━━━━━━━━━━━━━━━━━━━━\u001b[0m\u001b[37m\u001b[0m \u001b[1m3561s\u001b[0m 729ms/step - loss: 0.0591 - sparse_categorical_accuracy: 0.8291\n"
+      "\u001b[1m400/400\u001b[0m \u001b[32m━━━━━━━━━━━━━━━━━━━━\u001b[0m\u001b[37m\u001b[0m \u001b[1m321s\u001b[0m 753ms/step - loss: 0.1442 - sparse_categorical_accuracy: 0.6122\n"
      ]
     },
     {
      "data": {
       "text/plain": [
-       "<keras.src.callbacks.history.History at 0x783458300970>"
+       "<keras.src.callbacks.history.History at 0x7d4234204b80>"
       ]
      },
      "execution_count": 19,
@@ -1488,13 +1488,13 @@
   },
   {
    "cell_type": "markdown",
-   "id": "8491dd2d",
+   "id": "a4860fd4",
    "metadata": {
     "papermill": {
-     "duration": 0.416455,
-     "end_time": "2024-09-25T02:25:32.624787",
+     "duration": 0.043987,
+     "end_time": "2024-09-28T02:21:45.995134",
      "exception": false,
-     "start_time": "2024-09-25T02:25:32.208332",
+     "start_time": "2024-09-28T02:21:45.951147",
      "status": "completed"
     },
     "tags": []
@@ -1508,19 +1508,19 @@
   {
    "cell_type": "code",
    "execution_count": 20,
-   "id": "283576cc",
+   "id": "b9137919",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-09-25T02:25:33.507550Z",
-     "iopub.status.busy": "2024-09-25T02:25:33.506715Z",
-     "iopub.status.idle": "2024-09-25T02:25:42.686875Z",
-     "shell.execute_reply": "2024-09-25T02:25:42.685744Z"
+     "iopub.execute_input": "2024-09-28T02:21:46.085578Z",
+     "iopub.status.busy": "2024-09-28T02:21:46.084703Z",
+     "iopub.status.idle": "2024-09-28T02:21:54.242378Z",
+     "shell.execute_reply": "2024-09-28T02:21:54.241215Z"
     },
     "papermill": {
-     "duration": 9.597736,
-     "end_time": "2024-09-25T02:25:42.689043",
+     "duration": 8.205127,
+     "end_time": "2024-09-28T02:21:54.244448",
      "exception": false,
-     "start_time": "2024-09-25T02:25:33.091307",
+     "start_time": "2024-09-28T02:21:46.039321",
      "status": "completed"
     },
     "tags": []
@@ -1531,37 +1531,38 @@
      "output_type": "stream",
      "text": [
       "Instruction:\n",
-      "Predict the next chess move in the sequence ['d4', 'Nf6', 'c4', 'e6']\n",
+      "Predict the next chess move in the sequence ['e4', 'e5']\n",
       "\n",
       "Response:\n",
-      "The next move is 'e3'\n"
+      "The next move is 'c5'\n"
      ]
     }
    ],
    "source": [
+    "# On a new sample\n",
     "prompt = template.format(\n",
-    "    instruction=\"Predict the next chess move in the sequence ['d4', 'Nf6', 'c4', 'e6']\",\n",
+    "    instruction=\"Predict the next chess move in the sequence ['e4', 'e5']\",\n",
     "    response=\"\",\n",
     ")\n",
-    "print(gemma_lm.generate(prompt, max_length=500))"
+    "print(gemma_lm.generate(prompt, max_length=256))"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": 21,
-   "id": "78927d88",
+   "id": "7da5c812",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-09-25T02:25:43.516096Z",
-     "iopub.status.busy": "2024-09-25T02:25:43.515187Z",
-     "iopub.status.idle": "2024-09-25T02:25:44.029966Z",
-     "shell.execute_reply": "2024-09-25T02:25:44.028933Z"
+     "iopub.execute_input": "2024-09-28T02:21:54.336322Z",
+     "iopub.status.busy": "2024-09-28T02:21:54.335929Z",
+     "iopub.status.idle": "2024-09-28T02:21:54.756644Z",
+     "shell.execute_reply": "2024-09-28T02:21:54.755249Z"
     },
     "papermill": {
-     "duration": 0.933065,
-     "end_time": "2024-09-25T02:25:44.032133",
+     "duration": 0.469525,
+     "end_time": "2024-09-28T02:21:54.758869",
      "exception": false,
-     "start_time": "2024-09-25T02:25:43.099068",
+     "start_time": "2024-09-28T02:21:54.289344",
      "status": "completed"
     },
     "tags": []
@@ -1572,122 +1573,38 @@
      "output_type": "stream",
      "text": [
       "Instruction:\n",
-      "Predict the next chess move in the sequence ['e4', 'e5', 'Nf3', 'd5']\n",
+      "Predict the next chess move in the sequence ['e4', 'e5']\n",
       "\n",
       "Response:\n",
-      "The next move is 'Nc3'\n"
+      "The next move is 'c5'\n"
      ]
     }
    ],
    "source": [
     "# On a new sample\n",
     "prompt = template.format(\n",
-    "    instruction=\"Predict the next chess move in the sequence ['e4', 'e5', 'Nf3', 'd5']\",\n",
+    "    instruction=\"Predict the next chess move in the sequence ['e4', 'e5']\",\n",
     "    response=\"\",\n",
     ")\n",
-    "print(gemma_lm.generate(prompt, max_length=500))"
+    "print(gemma_lm.generate(prompt, max_length=256))"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": 22,
-   "id": "1face148",
+   "id": "94fec0f9",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-09-25T02:25:44.925410Z",
-     "iopub.status.busy": "2024-09-25T02:25:44.924990Z",
-     "iopub.status.idle": "2024-09-25T02:25:53.208866Z",
-     "shell.execute_reply": "2024-09-25T02:25:53.207831Z"
+     "iopub.execute_input": "2024-09-28T02:21:54.849532Z",
+     "iopub.status.busy": "2024-09-28T02:21:54.849142Z",
+     "iopub.status.idle": "2024-09-28T02:21:55.243951Z",
+     "shell.execute_reply": "2024-09-28T02:21:55.243043Z"
     },
     "papermill": {
-     "duration": 8.763238,
-     "end_time": "2024-09-25T02:25:53.211559",
+     "duration": 0.442643,
+     "end_time": "2024-09-28T02:21:55.246044",
      "exception": false,
-     "start_time": "2024-09-25T02:25:44.448321",
-     "status": "completed"
-    },
-    "tags": []
-   },
-   "outputs": [
-    {
-     "name": "stdout",
-     "output_type": "stream",
-     "text": [
-      "Instruction:\n",
-      "Predict the next chess move in the sequence ['e4', 'e5']\n",
-      "\n",
-      "Response:\n",
-      "The next move is 'Nf3'\n"
-     ]
-    }
-   ],
-   "source": [
-    "# On a new sample\n",
-    "prompt = template.format(\n",
-    "    instruction=\"Predict the next chess move in the sequence ['e4', 'e5']\",\n",
-    "    response=\"\",\n",
-    ")\n",
-    "print(gemma_lm.generate(prompt, max_length=256))"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": 23,
-   "id": "d53bb376",
-   "metadata": {
-    "execution": {
-     "iopub.execute_input": "2024-09-25T02:25:54.056339Z",
-     "iopub.status.busy": "2024-09-25T02:25:54.055132Z",
-     "iopub.status.idle": "2024-09-25T02:25:54.454071Z",
-     "shell.execute_reply": "2024-09-25T02:25:54.452568Z"
-    },
-    "papermill": {
-     "duration": 0.835764,
-     "end_time": "2024-09-25T02:25:54.456397",
-     "exception": false,
-     "start_time": "2024-09-25T02:25:53.620633",
-     "status": "completed"
-    },
-    "tags": []
-   },
-   "outputs": [
-    {
-     "name": "stdout",
-     "output_type": "stream",
-     "text": [
-      "Instruction:\n",
-      "Predict the next chess move in the sequence ['e4', 'e5']\n",
-      "\n",
-      "Response:\n",
-      "The next move is 'Nf3'\n"
-     ]
-    }
-   ],
-   "source": [
-    "# On a new sample\n",
-    "prompt = template.format(\n",
-    "    instruction=\"Predict the next chess move in the sequence ['e4', 'e5']\",\n",
-    "    response=\"\",\n",
-    ")\n",
-    "print(gemma_lm.generate(prompt, max_length=256))"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": 24,
-   "id": "2e3e72ff",
-   "metadata": {
-    "execution": {
-     "iopub.execute_input": "2024-09-25T02:25:55.330055Z",
-     "iopub.status.busy": "2024-09-25T02:25:55.329377Z",
-     "iopub.status.idle": "2024-09-25T02:25:55.724219Z",
-     "shell.execute_reply": "2024-09-25T02:25:55.723027Z"
-    },
-    "papermill": {
-     "duration": 0.821286,
-     "end_time": "2024-09-25T02:25:55.726474",
-     "exception": false,
-     "start_time": "2024-09-25T02:25:54.905188",
+     "start_time": "2024-09-28T02:21:54.803401",
      "status": "completed"
     },
     "tags": []
@@ -1701,7 +1618,7 @@
       "Predict the next chess move in the sequence ['e4', 'e5', 'Nf3']\n",
       "\n",
       "Response:\n",
-      "The next move is 'Nc6'\n"
+      "The next move is 'c3'\n"
      ]
     }
    ],
@@ -1716,20 +1633,20 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 25,
-   "id": "1a2a873a",
+   "execution_count": 23,
+   "id": "26bd7a10",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-09-25T02:25:56.581904Z",
-     "iopub.status.busy": "2024-09-25T02:25:56.581486Z",
-     "iopub.status.idle": "2024-09-25T02:25:56.975575Z",
-     "shell.execute_reply": "2024-09-25T02:25:56.974598Z"
+     "iopub.execute_input": "2024-09-28T02:21:55.338672Z",
+     "iopub.status.busy": "2024-09-28T02:21:55.338288Z",
+     "iopub.status.idle": "2024-09-28T02:21:55.741490Z",
+     "shell.execute_reply": "2024-09-28T02:21:55.740529Z"
     },
     "papermill": {
-     "duration": 0.808058,
-     "end_time": "2024-09-25T02:25:56.977876",
+     "duration": 0.452206,
+     "end_time": "2024-09-28T02:21:55.743693",
      "exception": false,
-     "start_time": "2024-09-25T02:25:56.169818",
+     "start_time": "2024-09-28T02:21:55.291487",
      "status": "completed"
     },
     "tags": []
@@ -1743,7 +1660,7 @@
       "Predict the next chess move in the sequence ['e4', 'e5', 'Nf3', 'Nc6']\n",
       "\n",
       "Response:\n",
-      "The next move is 'Bc4'\n"
+      "The next move is 'Nc3'\n"
      ]
     }
    ],
@@ -1757,182 +1674,14 @@
    ]
   },
   {
-   "cell_type": "code",
-   "execution_count": 26,
-   "id": "7ebbb0bb",
-   "metadata": {
-    "execution": {
-     "iopub.execute_input": "2024-09-25T02:25:57.804451Z",
-     "iopub.status.busy": "2024-09-25T02:25:57.804049Z",
-     "iopub.status.idle": "2024-09-25T02:25:58.198469Z",
-     "shell.execute_reply": "2024-09-25T02:25:58.197170Z"
-    },
-    "papermill": {
-     "duration": 0.812366,
-     "end_time": "2024-09-25T02:25:58.200565",
-     "exception": false,
-     "start_time": "2024-09-25T02:25:57.388199",
-     "status": "completed"
-    },
-    "tags": []
-   },
-   "outputs": [
-    {
-     "name": "stdout",
-     "output_type": "stream",
-     "text": [
-      "Instruction:\n",
-      "Predict the next chess move in the sequence ['e4', 'e5', 'Nf3', 'Nc6', 'Bc4']\n",
-      "\n",
-      "Response:\n",
-      "The next move is 'Nf6'\n"
-     ]
-    }
-   ],
-   "source": [
-    "# On a new sample\n",
-    "prompt = template.format(\n",
-    "    instruction=\"Predict the next chess move in the sequence ['e4', 'e5', 'Nf3', 'Nc6', 'Bc4']\",\n",
-    "    response=\"\",\n",
-    ")\n",
-    "print(gemma_lm.generate(prompt, max_length=256))"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": 27,
-   "id": "403ae0f6",
-   "metadata": {
-    "execution": {
-     "iopub.execute_input": "2024-09-25T02:25:59.069971Z",
-     "iopub.status.busy": "2024-09-25T02:25:59.069569Z",
-     "iopub.status.idle": "2024-09-25T02:25:59.467080Z",
-     "shell.execute_reply": "2024-09-25T02:25:59.465800Z"
-    },
-    "papermill": {
-     "duration": 0.85887,
-     "end_time": "2024-09-25T02:25:59.469065",
-     "exception": false,
-     "start_time": "2024-09-25T02:25:58.610195",
-     "status": "completed"
-    },
-    "tags": []
-   },
-   "outputs": [
-    {
-     "name": "stdout",
-     "output_type": "stream",
-     "text": [
-      "Instruction:\n",
-      "Predict the next chess move in the sequence ['e4', 'e5', 'Nf3', 'Nc6', 'Bc4', 'Nf6']\n",
-      "\n",
-      "Response:\n",
-      "The next move is 'Nc3'\n"
-     ]
-    }
-   ],
-   "source": [
-    "# On a new sample\n",
-    "prompt = template.format(\n",
-    "    instruction=\"Predict the next chess move in the sequence ['e4', 'e5', 'Nf3', 'Nc6', 'Bc4', 'Nf6']\",\n",
-    "    response=\"\",\n",
-    ")\n",
-    "print(gemma_lm.generate(prompt, max_length=256))"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": 28,
-   "id": "1c017d26",
-   "metadata": {
-    "execution": {
-     "iopub.execute_input": "2024-09-25T02:26:00.293278Z",
-     "iopub.status.busy": "2024-09-25T02:26:00.292905Z",
-     "iopub.status.idle": "2024-09-25T02:26:00.687476Z",
-     "shell.execute_reply": "2024-09-25T02:26:00.686475Z"
-    },
-    "papermill": {
-     "duration": 0.814428,
-     "end_time": "2024-09-25T02:26:00.689771",
-     "exception": false,
-     "start_time": "2024-09-25T02:25:59.875343",
-     "status": "completed"
-    },
-    "tags": []
-   },
-   "outputs": [
-    {
-     "name": "stdout",
-     "output_type": "stream",
-     "text": [
-      "Instruction:\n",
-      "Predict the next chess move in the sequence ['e4', 'e5', 'Nf3', 'Nc6', 'Bc4', 'Nf6', 'Nc3']\n",
-      "\n",
-      "Response:\n",
-      "The next move is 'd6'\n"
-     ]
-    }
-   ],
-   "source": [
-    "# On a new sample\n",
-    "prompt = template.format(\n",
-    "    instruction=\"Predict the next chess move in the sequence ['e4', 'e5', 'Nf3', 'Nc6', 'Bc4', 'Nf6', 'Nc3']\",\n",
-    "    response=\"\",\n",
-    ")\n",
-    "print(gemma_lm.generate(prompt, max_length=256))"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": 29,
-   "id": "1097d1eb",
-   "metadata": {
-    "execution": {
-     "iopub.execute_input": "2024-09-25T02:26:01.514391Z",
-     "iopub.status.busy": "2024-09-25T02:26:01.513478Z",
-     "iopub.status.idle": "2024-09-25T02:26:01.907956Z",
-     "shell.execute_reply": "2024-09-25T02:26:01.906826Z"
-    },
-    "papermill": {
-     "duration": 0.805731,
-     "end_time": "2024-09-25T02:26:01.909984",
-     "exception": false,
-     "start_time": "2024-09-25T02:26:01.104253",
-     "status": "completed"
-    },
-    "tags": []
-   },
-   "outputs": [
-    {
-     "name": "stdout",
-     "output_type": "stream",
-     "text": [
-      "Instruction:\n",
-      "Predict the next chess move in the sequence ['e4', 'e5', 'Nf3', 'Nc6', 'Bc4', 'Nf6', 'Nc3', 'd6']\n",
-      "\n",
-      "Response:\n",
-      "The next move is 'Nf3'\n"
-     ]
-    }
-   ],
-   "source": [
-    "# On a new sample\n",
-    "prompt = template.format(\n",
-    "    instruction=\"Predict the next chess move in the sequence ['e4', 'e5', 'Nf3', 'Nc6', 'Bc4', 'Nf6', 'Nc3', 'd6']\",\n",
-    "    response=\"\",\n",
-    ")\n",
-    "print(gemma_lm.generate(prompt, max_length=256))"
-   ]
-  },
-  {
    "cell_type": "markdown",
-   "id": "8410a933",
+   "id": "5f1190bd",
    "metadata": {
     "papermill": {
-     "duration": 0.407034,
-     "end_time": "2024-09-25T02:26:02.759891",
+     "duration": 0.044974,
+     "end_time": "2024-09-28T02:21:55.833848",
      "exception": false,
-     "start_time": "2024-09-25T02:26:02.352857",
+     "start_time": "2024-09-28T02:21:55.788874",
      "status": "completed"
     },
     "tags": []
@@ -1945,20 +1694,20 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 30,
-   "id": "8b1c93a2",
+   "execution_count": 24,
+   "id": "1793d02a",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-09-25T02:26:03.597373Z",
-     "iopub.status.busy": "2024-09-25T02:26:03.596931Z",
-     "iopub.status.idle": "2024-09-25T02:26:06.706150Z",
-     "shell.execute_reply": "2024-09-25T02:26:06.704917Z"
+     "iopub.execute_input": "2024-09-28T02:21:55.926038Z",
+     "iopub.status.busy": "2024-09-28T02:21:55.925672Z",
+     "iopub.status.idle": "2024-09-28T02:21:59.205786Z",
+     "shell.execute_reply": "2024-09-28T02:21:59.204752Z"
     },
     "papermill": {
-     "duration": 3.529303,
-     "end_time": "2024-09-25T02:26:06.708302",
+     "duration": 3.328584,
+     "end_time": "2024-09-28T02:21:59.207886",
      "exception": false,
-     "start_time": "2024-09-25T02:26:03.178999",
+     "start_time": "2024-09-28T02:21:55.879302",
      "status": "completed"
     },
     "tags": []
@@ -1968,14 +1717,14 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "['Kf3', 'e6', 'd4']\n",
-      "['Kf3', 'e6', 'd4', 'd5']\n",
-      "['Kf3', 'e6', 'd4', 'd5', 'Nc3']\n",
-      "['Kf3', 'e6', 'd4', 'd5', 'Nc3', 'Nf6']\n",
-      "['Kf3', 'e6', 'd4', 'd5', 'Nc3', 'Nf6', 'Nf4']\n",
-      "['Kf3', 'e6', 'd4', 'd5', 'Nc3', 'Nf6', 'Nf4', 'Nc6']\n",
-      "['Kf3', 'e6', 'd4', 'd5', 'Nc3', 'Nf6', 'Nf4', 'Nc6', 'Nf5']\n",
-      "['Kf3', 'e6', 'd4', 'd5', 'Nc3', 'Nf6', 'Nf4', 'Nc6', 'Nf5', 'Nc4']\n"
+      "['Nf3', 'e6', 'Nc3']\n",
+      "['Nf3', 'e6', 'Nc3', 'Nc6']\n",
+      "['Nf3', 'e6', 'Nc3', 'Nc6', 'Bg4']\n",
+      "['Nf3', 'e6', 'Nc3', 'Nc6', 'Bg4', 'Nf6']\n",
+      "['Nf3', 'e6', 'Nc3', 'Nc6', 'Bg4', 'Nf6', 'c4']\n",
+      "['Nf3', 'e6', 'Nc3', 'Nc6', 'Bg4', 'Nf6', 'c4', 'e4']\n",
+      "['Nf3', 'e6', 'Nc3', 'Nc6', 'Bg4', 'Nf6', 'c4', 'e4', 'd4']\n",
+      "['Nf3', 'e6', 'Nc3', 'Nc6', 'Bg4', 'Nf6', 'c4', 'e4', 'd4', 'e5']\n"
      ]
     }
    ],
@@ -1994,25 +1743,112 @@
     "\n",
     "        print(move_list)\n",
     "    \n",
-    "play_game(['Kf3', 'e6'], 10)"
+    "play_game(['Nf3', 'e6'], 10)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "84194173",
+   "metadata": {
+    "papermill": {
+     "duration": 0.045378,
+     "end_time": "2024-09-28T02:21:59.299517",
+     "exception": false,
+     "start_time": "2024-09-28T02:21:59.254139",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "# Save LoRA weights\n",
+    "\n",
+    "We only need to save the LoRA weights, which are very small compared to the model itsef."
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": null,
-   "id": "54a5a0c0",
+   "execution_count": 25,
+   "id": "7cf2f742",
    "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T02:21:59.392301Z",
+     "iopub.status.busy": "2024-09-28T02:21:59.391908Z",
+     "iopub.status.idle": "2024-09-28T02:21:59.455873Z",
+     "shell.execute_reply": "2024-09-28T02:21:59.454755Z"
+    },
     "papermill": {
-     "duration": 0.413147,
-     "end_time": "2024-09-25T02:26:07.571246",
+     "duration": 0.11255,
+     "end_time": "2024-09-28T02:21:59.458124",
      "exception": false,
-     "start_time": "2024-09-25T02:26:07.158099",
+     "start_time": "2024-09-28T02:21:59.345574",
      "status": "completed"
     },
     "tags": []
    },
    "outputs": [],
-   "source": []
+   "source": [
+    "model_name = \"gemma_2b_enV2-100pgn\"\n",
+    "gemma_lm.backbone.save_lora_weights(f\"/kaggle/working/{model_name}.lora.h5\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "f7337370",
+   "metadata": {
+    "papermill": {
+     "duration": 0.045023,
+     "end_time": "2024-09-28T02:21:59.549569",
+     "exception": false,
+     "start_time": "2024-09-28T02:21:59.504546",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "Example of how to load the model with LoRA weights."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 26,
+   "id": "0546b36d",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T02:21:59.641734Z",
+     "iopub.status.busy": "2024-09-28T02:21:59.640832Z",
+     "iopub.status.idle": "2024-09-28T02:21:59.645518Z",
+     "shell.execute_reply": "2024-09-28T02:21:59.644581Z"
+    },
+    "papermill": {
+     "duration": 0.052943,
+     "end_time": "2024-09-28T02:21:59.647446",
+     "exception": false,
+     "start_time": "2024-09-28T02:21:59.594503",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "# # Load the model like this\n",
+    "\n",
+    "# # Do TPU and GPU stuff\n",
+    "# # .... \n",
+    "\n",
+    "# # Define paths\n",
+    "# LORA_WEIGHTS_PATH = f\"/kaggle/working/{model_name}.lora.h5\"\n",
+    "\n",
+    "# model = keras_nlp.models.GemmaCausalLM.from_preset('gemma_instruct_2b_en')\n",
+    "\n",
+    "# model.backbone.enable_lora(rank=4)\n",
+    "\n",
+    "# model.preprocessor.sequence_length = 512\n",
+    "\n",
+    "# # Load only the lora weights\n",
+    "# model.backbone.load_lora_weights(LORA_WEIGHTS_PATH)\n",
+    "\n",
+    "# output = model.generate(\"blah blah I'm a prompt template with stuff in me\", max_length=512)\n"
+   ]
   }
  ],
  "metadata": {
@@ -2056,14 +1892,14 @@
   },
   "papermill": {
    "default_parameters": {},
-   "duration": 3773.875783,
-   "end_time": "2024-09-25T02:26:11.495976",
+   "duration": 502.920674,
+   "end_time": "2024-09-28T02:22:02.872842",
    "environment_variables": {},
    "exception": null,
    "input_path": "__notebook__.ipynb",
    "output_path": "__notebook__.ipynb",
    "parameters": {},
-   "start_time": "2024-09-25T01:23:17.620193",
+   "start_time": "2024-09-28T02:13:39.952168",
    "version": "2.6.0"
   }
  },
