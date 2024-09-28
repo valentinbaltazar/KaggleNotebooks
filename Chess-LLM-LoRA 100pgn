@@ -1,0 +1,2331 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "45920337",
+   "metadata": {
+    "papermill": {
+     "duration": 0.011556,
+     "end_time": "2024-09-28T03:41:04.220016",
+     "exception": false,
+     "start_time": "2024-09-28T03:41:04.208460",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "# Intro\n",
+    "\n",
+    "This notebook will be testing how well an LLM can play chess, by predicting the next best move in a given chess sequence."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "162c8a29",
+   "metadata": {
+    "papermill": {
+     "duration": 0.011145,
+     "end_time": "2024-09-28T03:41:04.241858",
+     "exception": false,
+     "start_time": "2024-09-28T03:41:04.230713",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## 1. Base Chess Knowledge\n",
+    "\n",
+    "Let's first examine how a base model generates a response about chess content."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "2cc7d291",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:41:04.264416Z",
+     "iopub.status.busy": "2024-09-28T03:41:04.264004Z",
+     "iopub.status.idle": "2024-09-28T03:41:29.928239Z",
+     "shell.execute_reply": "2024-09-28T03:41:29.927015Z"
+    },
+    "papermill": {
+     "duration": 25.678461,
+     "end_time": "2024-09-28T03:41:29.930699",
+     "exception": false,
+     "start_time": "2024-09-28T03:41:04.252238",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "# Install Keras\n",
+    "!pip install -q -U keras-nlp\n",
+    "!pip install -q -U keras>=3"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "5eea4cb4",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:41:29.954674Z",
+     "iopub.status.busy": "2024-09-28T03:41:29.953932Z",
+     "iopub.status.idle": "2024-09-28T03:41:29.958798Z",
+     "shell.execute_reply": "2024-09-28T03:41:29.957986Z"
+    },
+    "papermill": {
+     "duration": 0.018816,
+     "end_time": "2024-09-28T03:41:29.960631",
+     "exception": false,
+     "start_time": "2024-09-28T03:41:29.941815",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "import os\n",
+    "\n",
+    "os.environ[\"KERAS_BACKEND\"] = \"jax\"  # Or \"torch\" or \"tensorflow\".\n",
+    "# Avoid memory fragmentation on JAX backend.\n",
+    "os.environ[\"XLA_PYTHON_CLIENT_MEM_FRACTION\"]=\"1.00\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "0d0848e5",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:41:29.982626Z",
+     "iopub.status.busy": "2024-09-28T03:41:29.982304Z",
+     "iopub.status.idle": "2024-09-28T03:42:46.905004Z",
+     "shell.execute_reply": "2024-09-28T03:42:46.904103Z"
+    },
+    "papermill": {
+     "duration": 76.93594,
+     "end_time": "2024-09-28T03:42:46.906967",
+     "exception": false,
+     "start_time": "2024-09-28T03:41:29.971027",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "normalizer.cc(51) LOG(INFO) precompiled_charsmap is empty. use identity normalization.\n"
+     ]
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\"><span style=\"font-weight: bold\">Preprocessor: \"gemma_causal_lm_preprocessor\"</span>\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "\u001b[1mPreprocessor: \"gemma_causal_lm_preprocessor\"\u001b[0m\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\">┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n",
+       "┃<span style=\"font-weight: bold\"> Layer (type)                                                  </span>┃<span style=\"font-weight: bold\">                                   Config </span>┃\n",
+       "┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩\n",
+       "│ gemma_tokenizer (<span style=\"color: #0087ff; text-decoration-color: #0087ff\">GemmaTokenizer</span>)                              │                      Vocab size: <span style=\"color: #00af00; text-decoration-color: #00af00\">256,000</span> │\n",
+       "└───────────────────────────────────────────────────────────────┴──────────────────────────────────────────┘\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n",
+       "┃\u001b[1m \u001b[0m\u001b[1mLayer (type)                                                 \u001b[0m\u001b[1m \u001b[0m┃\u001b[1m \u001b[0m\u001b[1m                                  Config\u001b[0m\u001b[1m \u001b[0m┃\n",
+       "┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩\n",
+       "│ gemma_tokenizer (\u001b[38;5;33mGemmaTokenizer\u001b[0m)                              │                      Vocab size: \u001b[38;5;34m256,000\u001b[0m │\n",
+       "└───────────────────────────────────────────────────────────────┴──────────────────────────────────────────┘\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\"><span style=\"font-weight: bold\">Model: \"gemma_causal_lm\"</span>\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "\u001b[1mModel: \"gemma_causal_lm\"\u001b[0m\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\">┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n",
+       "┃<span style=\"font-weight: bold\"> Layer (type)                  </span>┃<span style=\"font-weight: bold\"> Output Shape              </span>┃<span style=\"font-weight: bold\">         Param # </span>┃<span style=\"font-weight: bold\"> Connected to               </span>┃\n",
+       "┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩\n",
+       "│ padding_mask (<span style=\"color: #0087ff; text-decoration-color: #0087ff\">InputLayer</span>)     │ (<span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>)              │               <span style=\"color: #00af00; text-decoration-color: #00af00\">0</span> │ -                          │\n",
+       "├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤\n",
+       "│ token_ids (<span style=\"color: #0087ff; text-decoration-color: #0087ff\">InputLayer</span>)        │ (<span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>)              │               <span style=\"color: #00af00; text-decoration-color: #00af00\">0</span> │ -                          │\n",
+       "├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤\n",
+       "│ gemma_backbone                │ (<span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00af00; text-decoration-color: #00af00\">2048</span>)        │   <span style=\"color: #00af00; text-decoration-color: #00af00\">2,506,172,416</span> │ padding_mask[<span style=\"color: #00af00; text-decoration-color: #00af00\">0</span>][<span style=\"color: #00af00; text-decoration-color: #00af00\">0</span>],        │\n",
+       "│ (<span style=\"color: #0087ff; text-decoration-color: #0087ff\">GemmaBackbone</span>)               │                           │                 │ token_ids[<span style=\"color: #00af00; text-decoration-color: #00af00\">0</span>][<span style=\"color: #00af00; text-decoration-color: #00af00\">0</span>]            │\n",
+       "├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤\n",
+       "│ token_embedding               │ (<span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00af00; text-decoration-color: #00af00\">256000</span>)      │     <span style=\"color: #00af00; text-decoration-color: #00af00\">524,288,000</span> │ gemma_backbone[<span style=\"color: #00af00; text-decoration-color: #00af00\">0</span>][<span style=\"color: #00af00; text-decoration-color: #00af00\">0</span>]       │\n",
+       "│ (<span style=\"color: #0087ff; text-decoration-color: #0087ff\">ReversibleEmbedding</span>)         │                           │                 │                            │\n",
+       "└───────────────────────────────┴───────────────────────────┴─────────────────┴────────────────────────────┘\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n",
+       "┃\u001b[1m \u001b[0m\u001b[1mLayer (type)                 \u001b[0m\u001b[1m \u001b[0m┃\u001b[1m \u001b[0m\u001b[1mOutput Shape             \u001b[0m\u001b[1m \u001b[0m┃\u001b[1m \u001b[0m\u001b[1m        Param #\u001b[0m\u001b[1m \u001b[0m┃\u001b[1m \u001b[0m\u001b[1mConnected to              \u001b[0m\u001b[1m \u001b[0m┃\n",
+       "┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩\n",
+       "│ padding_mask (\u001b[38;5;33mInputLayer\u001b[0m)     │ (\u001b[38;5;45mNone\u001b[0m, \u001b[38;5;45mNone\u001b[0m)              │               \u001b[38;5;34m0\u001b[0m │ -                          │\n",
+       "├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤\n",
+       "│ token_ids (\u001b[38;5;33mInputLayer\u001b[0m)        │ (\u001b[38;5;45mNone\u001b[0m, \u001b[38;5;45mNone\u001b[0m)              │               \u001b[38;5;34m0\u001b[0m │ -                          │\n",
+       "├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤\n",
+       "│ gemma_backbone                │ (\u001b[38;5;45mNone\u001b[0m, \u001b[38;5;45mNone\u001b[0m, \u001b[38;5;34m2048\u001b[0m)        │   \u001b[38;5;34m2,506,172,416\u001b[0m │ padding_mask[\u001b[38;5;34m0\u001b[0m][\u001b[38;5;34m0\u001b[0m],        │\n",
+       "│ (\u001b[38;5;33mGemmaBackbone\u001b[0m)               │                           │                 │ token_ids[\u001b[38;5;34m0\u001b[0m][\u001b[38;5;34m0\u001b[0m]            │\n",
+       "├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤\n",
+       "│ token_embedding               │ (\u001b[38;5;45mNone\u001b[0m, \u001b[38;5;45mNone\u001b[0m, \u001b[38;5;34m256000\u001b[0m)      │     \u001b[38;5;34m524,288,000\u001b[0m │ gemma_backbone[\u001b[38;5;34m0\u001b[0m][\u001b[38;5;34m0\u001b[0m]       │\n",
+       "│ (\u001b[38;5;33mReversibleEmbedding\u001b[0m)         │                           │                 │                            │\n",
+       "└───────────────────────────────┴───────────────────────────┴─────────────────┴────────────────────────────┘\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\"><span style=\"font-weight: bold\"> Total params: </span><span style=\"color: #00af00; text-decoration-color: #00af00\">2,506,172,416</span> (9.34 GB)\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "\u001b[1m Total params: \u001b[0m\u001b[38;5;34m2,506,172,416\u001b[0m (9.34 GB)\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\"><span style=\"font-weight: bold\"> Trainable params: </span><span style=\"color: #00af00; text-decoration-color: #00af00\">2,506,172,416</span> (9.34 GB)\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "\u001b[1m Trainable params: \u001b[0m\u001b[38;5;34m2,506,172,416\u001b[0m (9.34 GB)\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\"><span style=\"font-weight: bold\"> Non-trainable params: </span><span style=\"color: #00af00; text-decoration-color: #00af00\">0</span> (0.00 B)\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "\u001b[1m Non-trainable params: \u001b[0m\u001b[38;5;34m0\u001b[0m (0.00 B)\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "import keras\n",
+    "import keras_nlp\n",
+    "\n",
+    "# Load the model\n",
+    "gemma_lm = keras_nlp.models.GemmaCausalLM.from_preset(\"gemma_2b_en\")\n",
+    "gemma_lm.summary()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "7467ea94",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:42:46.932356Z",
+     "iopub.status.busy": "2024-09-28T03:42:46.931411Z",
+     "iopub.status.idle": "2024-09-28T03:43:00.888638Z",
+     "shell.execute_reply": "2024-09-28T03:43:00.887582Z"
+    },
+    "papermill": {
+     "duration": 13.972035,
+     "end_time": "2024-09-28T03:43:00.890856",
+     "exception": false,
+     "start_time": "2024-09-28T03:42:46.918821",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Instruction:\n",
+      "List some chess moves in PGN format:\n",
+      "\n",
+      "Response:\n",
+      "1.e4 e5 2.Nf3 Nc6 3.d4 Nf6 4.Nc3 Bc5 5.Be3 d6 6.O-O Be7 7.c3 O-O 8.d5 c6 9.Nf4 d5 10.cxd5 exd5 11.Nxd5 Nxd5 12.Bxd5 Qxd5 13.Qxd5 Qxd5 14.Qxd5 Qxd5 15.Qxd5 Qxd5 16.Qxd5 Qxd5 17.Qxd5 Qxd5 18.Qxd5 Qxd5 19.Qxd5 Qxd5 20.Qxd5 Qxd5 21.Qxd5 Qxd5 22.Qxd5 Qxd5 23.Qxd5 Qxd5 24.Qxd5 Qxd5 25.Qxd5 Qxd5 26.Qxd5 Qxd5 27.\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Test some example prompts\n",
+    "template = \"Instruction:\\n{instruction}\\n\\nResponse:\\n{response}\"\n",
+    "\n",
+    "prompt = template.format(\n",
+    "    instruction=\"List some chess moves in PGN format:\",\n",
+    "    response=\"\",\n",
+    ")\n",
+    "print(gemma_lm.generate(prompt, max_length=256))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "a8c16621",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:43:00.915718Z",
+     "iopub.status.busy": "2024-09-28T03:43:00.915333Z",
+     "iopub.status.idle": "2024-09-28T03:43:05.669840Z",
+     "shell.execute_reply": "2024-09-28T03:43:05.668732Z"
+    },
+    "papermill": {
+     "duration": 4.769236,
+     "end_time": "2024-09-28T03:43:05.672053",
+     "exception": false,
+     "start_time": "2024-09-28T03:43:00.902817",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Instruction:\n",
+      "Explain this chess sequence: 1. e4 e5 2. Nf3 c6 3. Nc3 d6 4. d4 exd4 5. Qxd4 Nf6 6. Bg5 Nbd7\n",
+      "\n",
+      "Response:\n",
+      "The sequence is a typical Queen's Gambit Declined. The idea is to play the Queen's Gambit, but to play the Queen's Gambit Declined. The idea is to play the Queen's Gambit, but to play the Queen's Gambit Declined. The idea is to play the Queen's Gambit, but to play the Queen's Gambit Declined. The idea is to play the Queen's Gambit, but to play the Queen's Gambit Declined. The idea is to play the Queen's Gambit, but to play the Queen's Gambit Declined. The idea is to play the Queen's Gambit, but to play the Queen's Gambit Declined. The idea is to play the Queen's Gambit, but to play the Queen's Gambit Declined. The idea is to play the Queen's Gambit, but to play the Queen's Gambit Declined. The idea is to play the Queen\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Test some example prompts\n",
+    "template = \"Instruction:\\n{instruction}\\n\\nResponse:\\n{response}\"\n",
+    "\n",
+    "prompt = template.format(\n",
+    "    instruction=\"Explain this chess sequence: 1. e4 e5 2. Nf3 c6 3. Nc3 d6 4. d4 exd4 5. Qxd4 Nf6 6. Bg5 Nbd7\",\n",
+    "    response=\"\",\n",
+    ")\n",
+    "print(gemma_lm.generate(prompt, max_length=256))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "ad7dc0b7",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:43:05.697237Z",
+     "iopub.status.busy": "2024-09-28T03:43:05.696911Z",
+     "iopub.status.idle": "2024-09-28T03:43:10.946173Z",
+     "shell.execute_reply": "2024-09-28T03:43:10.945225Z"
+    },
+    "papermill": {
+     "duration": 5.264421,
+     "end_time": "2024-09-28T03:43:10.948510",
+     "exception": false,
+     "start_time": "2024-09-28T03:43:05.684089",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Instruction:\n",
+      "What is the next chess move in the PGN: 1.e4 e5 2.Nf3 c6 3.Nc3 d6\n",
+      "\n",
+      "Response:\n",
+      "The next move is 3...d5.\n",
+      "\n",
+      "Explanation:\n",
+      "The PGN: 1.e4 e5 2.Nf3 c6 3.Nc3 d6 is a chess game between two players. The first player, White, plays the move 1.e4, which is the move of the knight on the square e4. The second player, Black, plays the move 2.Nf3, which is the move of the knight on the square f3. The third player, White, plays the move 3.Nc3, which is the move of the knight on the square c3. The fourth player, Black, plays the move 3...d6, which is the move of the knight on the square d6. The fifth player, White, plays the move 4.Nd5, which is the move of the knight on the square e5. The sixth player, Black, plays the move 5.Nf3, which is the move of the knight on the square f3. The\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Test some example prompts\n",
+    "template = \"Instruction:\\n{instruction}\\n\\nResponse:\\n{response}\"\n",
+    "\n",
+    "prompt = template.format(\n",
+    "    instruction=\"What is the next chess move in the PGN: 1.e4 e5 2.Nf3 c6 3.Nc3 d6\",\n",
+    "    response=\"\",\n",
+    ")\n",
+    "print(gemma_lm.generate(prompt, max_length=256))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "50e525bd",
+   "metadata": {
+    "papermill": {
+     "duration": 0.011735,
+     "end_time": "2024-09-28T03:43:10.972389",
+     "exception": false,
+     "start_time": "2024-09-28T03:43:10.960654",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "# 2. Dataset\n",
+    "\n",
+    "Here we load the dataset that will be used to fine tune the model to predict best chess moves."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "45a01cf0",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:43:10.997184Z",
+     "iopub.status.busy": "2024-09-28T03:43:10.996860Z",
+     "iopub.status.idle": "2024-09-28T03:43:22.602386Z",
+     "shell.execute_reply": "2024-09-28T03:43:22.601152Z"
+    },
+    "papermill": {
+     "duration": 11.620622,
+     "end_time": "2024-09-28T03:43:22.604803",
+     "exception": false,
+     "start_time": "2024-09-28T03:43:10.984181",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "/opt/conda/lib/python3.10/pty.py:89: RuntimeWarning: os.fork() was called. os.fork() is incompatible with multithreaded code, and JAX is multithreaded, so this will likely lead to a deadlock.\n",
+      "  pid, fd = os.forkpty()\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Chess module\n",
+    "!pip install -q chess"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "a64bb954",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:43:22.630660Z",
+     "iopub.status.busy": "2024-09-28T03:43:22.630292Z",
+     "iopub.status.idle": "2024-09-28T03:43:26.149649Z",
+     "shell.execute_reply": "2024-09-28T03:43:26.148732Z"
+    },
+    "papermill": {
+     "duration": 3.534581,
+     "end_time": "2024-09-28T03:43:26.151728",
+     "exception": false,
+     "start_time": "2024-09-28T03:43:22.617147",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>white_username</th>\n",
+       "      <th>black_username</th>\n",
+       "      <th>white_id</th>\n",
+       "      <th>black_id</th>\n",
+       "      <th>white_rating</th>\n",
+       "      <th>black_rating</th>\n",
+       "      <th>white_result</th>\n",
+       "      <th>black_result</th>\n",
+       "      <th>time_class</th>\n",
+       "      <th>time_control</th>\n",
+       "      <th>rules</th>\n",
+       "      <th>rated</th>\n",
+       "      <th>fen</th>\n",
+       "      <th>pgn</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>-Amos-</td>\n",
+       "      <td>miniman2804</td>\n",
+       "      <td>https://api.chess.com/pub/player/-amos-</td>\n",
+       "      <td>https://api.chess.com/pub/player/miniman2804</td>\n",
+       "      <td>1708</td>\n",
+       "      <td>1608</td>\n",
+       "      <td>win</td>\n",
+       "      <td>checkmated</td>\n",
+       "      <td>daily</td>\n",
+       "      <td>1/259200</td>\n",
+       "      <td>chess</td>\n",
+       "      <td>True</td>\n",
+       "      <td>r2r4/p2p1p1p/b6R/n1p1kp2/2P2P2/3BP3/PP5P/4K2R ...</td>\n",
+       "      <td>[Event \"Enjoyable games 2 - Round 1\"]\\n[Site \"...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>-Amos-</td>\n",
+       "      <td>koltcho69</td>\n",
+       "      <td>https://api.chess.com/pub/player/-amos-</td>\n",
+       "      <td>https://api.chess.com/pub/player/koltcho69</td>\n",
+       "      <td>1726</td>\n",
+       "      <td>1577</td>\n",
+       "      <td>win</td>\n",
+       "      <td>resigned</td>\n",
+       "      <td>daily</td>\n",
+       "      <td>1/172800</td>\n",
+       "      <td>chess</td>\n",
+       "      <td>True</td>\n",
+       "      <td>8/5Q1k/4n1pp/8/7P/2N2b2/PP3P2/5K2 b - - 1 33</td>\n",
+       "      <td>[Event \"Rapid Rats - Board 5\"]\\n[Site \"Chess.c...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>-Amos-</td>\n",
+       "      <td>enhmandah</td>\n",
+       "      <td>https://api.chess.com/pub/player/-amos-</td>\n",
+       "      <td>https://api.chess.com/pub/player/enhmandah</td>\n",
+       "      <td>1727</td>\n",
+       "      <td>842</td>\n",
+       "      <td>win</td>\n",
+       "      <td>resigned</td>\n",
+       "      <td>daily</td>\n",
+       "      <td>1/172800</td>\n",
+       "      <td>chess</td>\n",
+       "      <td>True</td>\n",
+       "      <td>rn1q1b1r/kb2p1pp/2p5/p1Q5/N1BP2n1/4PN2/1P3PPP/...</td>\n",
+       "      <td>[Event \"CHESS BOARD CLASH - Round 1\"]\\n[Site \"...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>enhmandah</td>\n",
+       "      <td>-Amos-</td>\n",
+       "      <td>https://api.chess.com/pub/player/enhmandah</td>\n",
+       "      <td>https://api.chess.com/pub/player/-amos-</td>\n",
+       "      <td>819</td>\n",
+       "      <td>1727</td>\n",
+       "      <td>checkmated</td>\n",
+       "      <td>win</td>\n",
+       "      <td>daily</td>\n",
+       "      <td>1/172800</td>\n",
+       "      <td>chess</td>\n",
+       "      <td>True</td>\n",
+       "      <td>r3kb1r/pp3ppp/3p1n2/2pKp3/P3P3/1P6/4qP1P/QNB5 ...</td>\n",
+       "      <td>[Event \"CHESS BOARD CLASH - Round 1\"]\\n[Site \"...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>-Amos-</td>\n",
+       "      <td>Shalllow-Blue</td>\n",
+       "      <td>https://api.chess.com/pub/player/-amos-</td>\n",
+       "      <td>https://api.chess.com/pub/player/shalllow-blue</td>\n",
+       "      <td>1729</td>\n",
+       "      <td>1116</td>\n",
+       "      <td>win</td>\n",
+       "      <td>resigned</td>\n",
+       "      <td>daily</td>\n",
+       "      <td>1/172800</td>\n",
+       "      <td>chess</td>\n",
+       "      <td>True</td>\n",
+       "      <td>r3b2r/pp6/2pPpR1k/4n3/2P3Q1/3B4/PP4PP/R5K1 b -...</td>\n",
+       "      <td>[Event \"CHESS BOARD CLASH - Round 1\"]\\n[Site \"...</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "  white_username black_username                                    white_id  \\\n",
+       "0         -Amos-    miniman2804     https://api.chess.com/pub/player/-amos-   \n",
+       "1         -Amos-      koltcho69     https://api.chess.com/pub/player/-amos-   \n",
+       "2         -Amos-      enhmandah     https://api.chess.com/pub/player/-amos-   \n",
+       "3      enhmandah         -Amos-  https://api.chess.com/pub/player/enhmandah   \n",
+       "4         -Amos-  Shalllow-Blue     https://api.chess.com/pub/player/-amos-   \n",
+       "\n",
+       "                                         black_id  white_rating  black_rating  \\\n",
+       "0    https://api.chess.com/pub/player/miniman2804          1708          1608   \n",
+       "1      https://api.chess.com/pub/player/koltcho69          1726          1577   \n",
+       "2      https://api.chess.com/pub/player/enhmandah          1727           842   \n",
+       "3         https://api.chess.com/pub/player/-amos-           819          1727   \n",
+       "4  https://api.chess.com/pub/player/shalllow-blue          1729          1116   \n",
+       "\n",
+       "  white_result black_result time_class time_control  rules  rated  \\\n",
+       "0          win   checkmated      daily     1/259200  chess   True   \n",
+       "1          win     resigned      daily     1/172800  chess   True   \n",
+       "2          win     resigned      daily     1/172800  chess   True   \n",
+       "3   checkmated          win      daily     1/172800  chess   True   \n",
+       "4          win     resigned      daily     1/172800  chess   True   \n",
+       "\n",
+       "                                                 fen  \\\n",
+       "0  r2r4/p2p1p1p/b6R/n1p1kp2/2P2P2/3BP3/PP5P/4K2R ...   \n",
+       "1       8/5Q1k/4n1pp/8/7P/2N2b2/PP3P2/5K2 b - - 1 33   \n",
+       "2  rn1q1b1r/kb2p1pp/2p5/p1Q5/N1BP2n1/4PN2/1P3PPP/...   \n",
+       "3  r3kb1r/pp3ppp/3p1n2/2pKp3/P3P3/1P6/4qP1P/QNB5 ...   \n",
+       "4  r3b2r/pp6/2pPpR1k/4n3/2P3Q1/3B4/PP4PP/R5K1 b -...   \n",
+       "\n",
+       "                                                 pgn  \n",
+       "0  [Event \"Enjoyable games 2 - Round 1\"]\\n[Site \"...  \n",
+       "1  [Event \"Rapid Rats - Board 5\"]\\n[Site \"Chess.c...  \n",
+       "2  [Event \"CHESS BOARD CLASH - Round 1\"]\\n[Site \"...  \n",
+       "3  [Event \"CHESS BOARD CLASH - Round 1\"]\\n[Site \"...  \n",
+       "4  [Event \"CHESS BOARD CLASH - Round 1\"]\\n[Site \"...  "
+      ]
+     },
+     "execution_count": 8,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# Load Dataset and parse PGN to LLM dataset\n",
+    "import pandas as pd\n",
+    "import numpy as np\n",
+    "import matplotlib.pyplot as plt\n",
+    "\n",
+    "data_path = \"/kaggle/input/chesscom-user-games-60000-games/club_games_data.csv\"\n",
+    "\n",
+    "df = pd.read_csv(data_path)\n",
+    "\n",
+    "df.reset_index()\n",
+    "df.head()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "33f6e946",
+   "metadata": {
+    "papermill": {
+     "duration": 0.012175,
+     "end_time": "2024-09-28T03:43:26.176387",
+     "exception": false,
+     "start_time": "2024-09-28T03:43:26.164212",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## Parse a given PGN, extract the moves into a list and also add some language context"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "d4c1f7ac",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:43:26.202501Z",
+     "iopub.status.busy": "2024-09-28T03:43:26.202164Z",
+     "iopub.status.idle": "2024-09-28T03:43:26.355795Z",
+     "shell.execute_reply": "2024-09-28T03:43:26.354513Z"
+    },
+    "papermill": {
+     "duration": 0.16925,
+     "end_time": "2024-09-28T03:43:26.357829",
+     "exception": false,
+     "start_time": "2024-09-28T03:43:26.188579",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "PGN:\n",
+      "\n",
+      "[Event \"Rapid Rats - Board 5\"]\n",
+      "[Site \"Chess.com\"]\n",
+      "[Date \"2013.01.19\"]\n",
+      "[Round \"-\"]\n",
+      "[White \"-Amos-\"]\n",
+      "[Black \"koltcho69\"]\n",
+      "[Result \"1-0\"]\n",
+      "[Match \"https://www.chess.com/club/matches/219602\"]\n",
+      "[CurrentPosition \"8/5Q1k/4n1pp/8/7P/2N2b2/PP3P2/5K2 b - - 1 33\"]\n",
+      "[Timezone \"UTC\"]\n",
+      "[ECO \"C53\"]\n",
+      "[ECOUrl \"https://www.chess.com/openings/Giuoco-Piano-Game-Main-Line\"]\n",
+      "[UTCDate \"2013.01.19\"]\n",
+      "[UTCTime \"14:29:25\"]\n",
+      "[WhiteElo \"1726\"]\n",
+      "[BlackElo \"1577\"]\n",
+      "[TimeControl \"1/172800\"]\n",
+      "[Termination \"-Amos- won by resignation\"]\n",
+      "[StartTime \"14:29:25\"]\n",
+      "[EndDate \"2013.02.01\"]\n",
+      "[EndTime \"18:22:03\"]\n",
+      "[Link \"https://www.chess.com/game/daily/64070770\"]\n",
+      "\n",
+      "1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. c3 a6 5. d4 exd4 6. cxd4 Be7 7. Qb3 Na5 8. Qc2 Nxc4 9. Qxc4 d6 10. Nc3 c6 11. O-O h6 12. Re1 Nf6 13. d5 c5 14. e5 dxe5 15. Nxe5 O-O 16. Ng6 Re8 17. Rxe7 Rxe7 18. Nxe7+ Qxe7 19. Bf4 b5 20. d6 Qd7 21. Qxc5 Bb7 22. Qc7 Qxc7 23. dxc7 Nd5 24. Rd1 Nxf4 25. Rd8+ Kh7 26. Rxa8 Bxa8 27. c8=Q Bxg2 28. Qxa6 Bf3 29. Qxb5 Nh3+ 30. Kf1 g6 31. Qd7 Ng5 32. h4 Ne6 33. Qxf7+ 1-0\n",
+      "\n",
+      "\n",
+      "Moves List:\n",
+      "\n",
+      "['e4', 'e5', 'Nf3', 'Nc6', 'Bc4', 'Bc5', 'c3', 'a6', 'd4', 'exd4', 'cxd4', 'Be7', 'Qb3', 'Na5', 'Qc2', 'Nxc4', 'Qxc4', 'd6', 'Nc3', 'c6', 'O-O', 'h6', 'Re1', 'Nf6', 'd5', 'c5', 'e5', 'dxe5', 'Nxe5', 'O-O', 'Ng6', 'Re8', 'Rxe7', 'Rxe7', 'Nxe7+', 'Qxe7', 'Bf4', 'b5', 'd6', 'Qd7', 'Qxc5', 'Bb7', 'Qc7', 'Qxc7', 'dxc7', 'Nd5', 'Rd1', 'Nxf4', 'Rd8+', 'Kh7', 'Rxa8', 'Bxa8', 'c8=Q', 'Bxg2', 'Qxa6', 'Bf3', 'Qxb5', 'Nh3+', 'Kf1', 'g6', 'Qd7', 'Ng5', 'h4', 'Ne6', 'Qxf7+']\n",
+      "\n",
+      "Explanation:\n",
+      "\n",
+      "['Pawn moves to e4', 'Pawn moves to e5', 'Knight moves to f3', 'Knight moves to c6', 'Bishop moves to c4', 'Bishop moves to c5', 'Pawn moves to c3', 'Pawn moves to a6', 'Pawn moves to d4', 'Pawn captures Pawn on d4', 'Pawn captures Pawn on d4', 'Bishop moves to e7', 'Queen moves to b3', 'Knight moves to a5', 'Queen moves to c2', 'Knight captures Bishop on c4', 'Queen captures Knight on c4', 'Pawn moves to d6', 'Knight moves to c3', 'Pawn moves to c6', 'Castles kingside', 'Pawn moves to h6', 'Rook moves to e1', 'Knight moves to f6', 'Pawn moves to d5', 'Pawn moves to c5', 'Pawn moves to e5', 'Pawn captures Pawn on e5', 'Knight captures Pawn on e5', 'Castles kingside', 'Knight moves to g6', 'Rook moves to e8', 'Rook captures Bishop on e7', 'Rook captures Rook on e7', 'Knight captures Rook on e7 with check', 'Queen captures Knight on e7', 'Bishop moves to f4', 'Pawn moves to b5', 'Pawn moves to d6', 'Queen moves to d7', 'Queen captures Pawn on c5', 'Bishop moves to b7', 'Queen moves to c7', 'Queen captures Queen on c7', 'Pawn captures Queen on c7', 'Knight moves to d5', 'Rook moves to d1', 'Knight captures Bishop on f4', 'Rook moves to d8 with check', 'King moves to h7', 'Rook captures Rook on a8', 'Bishop captures Rook on a8', 'Pawn moves to c8 and promotes to a Queen', 'Bishop captures Pawn on g2', 'Queen captures Pawn on a6', 'Bishop moves to f3', 'Queen captures Pawn on b5', 'Knight moves to h3 with check', 'King moves to f1', 'Pawn moves to g6', 'Queen moves to d7', 'Knight moves to g5', 'Pawn moves to h4', 'Knight moves to e6', 'Queen captures Pawn on f7 with check']\n",
+      "\n",
+      "Outcome:\n",
+      "\n",
+      "{'termination': '-Amos- won by resignation', 'result': '1-0', 'winner': 'White'}\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Language Generator\n",
+    "import chess\n",
+    "import chess.pgn\n",
+    "import io\n",
+    "\n",
+    "def describe_move(board, move):\n",
+    "    # Get the move in a human-readable format\n",
+    "    piece_moved = board.piece_at(move.from_square)\n",
+    "    move_san = board.san(move)\n",
+    "\n",
+    "    # Piece names\n",
+    "    piece_names = {\n",
+    "        chess.PAWN: \"Pawn\",\n",
+    "        chess.KNIGHT: \"Knight\",\n",
+    "        chess.BISHOP: \"Bishop\",\n",
+    "        chess.ROOK: \"Rook\",\n",
+    "        chess.QUEEN: \"Queen\",\n",
+    "        chess.KING: \"King\"\n",
+    "    }\n",
+    "\n",
+    "    # Capture move\n",
+    "    if board.is_capture(move):\n",
+    "        action = \"captures\"\n",
+    "        target_square = move.to_square\n",
+    "        captured_piece = board.piece_at(target_square)\n",
+    "        if captured_piece:\n",
+    "            captured_piece_name = piece_names.get(captured_piece.piece_type, \"piece\")\n",
+    "        else:\n",
+    "            captured_piece_name = \"a piece\"\n",
+    "        description = f\"\"\"{piece_names[piece_moved.piece_type]} {action} {captured_piece_name} on {chess.square_name(move.to_square)}\"\"\"\n",
+    "    else:\n",
+    "        # Regular move\n",
+    "        action = \"moves to\"\n",
+    "        description = f\"{piece_names[piece_moved.piece_type]} {action} {chess.square_name(move.to_square)}\"\n",
+    "    if move.promotion:\n",
+    "        description += f\" and promotes to a {piece_names[move.promotion]}\"\n",
+    "\n",
+    "    # Special moves\n",
+    "    if board.is_castling(move):\n",
+    "        if move.to_square == chess.G1 or move.to_square == chess.G8:\n",
+    "            description = \"Castles kingside\"\n",
+    "        else:\n",
+    "            description = \"Castles queenside\"\n",
+    "    if board.is_checkmate():\n",
+    "        description += \" and checkmates\"\n",
+    "    if board.gives_check(move):\n",
+    "        description += \" with check\"\n",
+    "\n",
+    "    return description\n",
+    "\n",
+    "def parse_pgn_from_string(pgn_string):\n",
+    "    # Parse the PGN string using a StringIO object\n",
+    "    pgn = io.StringIO(pgn_string)\n",
+    "    game = chess.pgn.read_game(pgn)\n",
+    "\n",
+    "    board = game.board()\n",
+    "   \n",
+    "    moves = []\n",
+    "    moves_descriptions = []\n",
+    "    outcome = {}\n",
+    "  \n",
+    "    for move in game.mainline_moves():\n",
+    "        moves.append(board.san(move))\n",
+    "        moves_descriptions.append(describe_move(board, move))\n",
+    "        board.push(move)  # Make the move on the board\n",
+    "        \n",
+    "\n",
+    "    # Get game termination, result, and winner\n",
+    "    termination = game.headers.get(\"Termination\", \"Unknown\")\n",
+    "    result = game.headers.get(\"Result\", \"Unknown\")\n",
+    "    winner = \"White\" if result == \"1-0\" else \"Black\" if result == \"0-1\" else \"Draw\"\n",
+    "\n",
+    "    outcome['termination'] = termination\n",
+    "    outcome['result'] = result\n",
+    "    outcome['winner'] = winner\n",
+    "\n",
+    "\n",
+    "    return moves, moves_descriptions, outcome\n",
+    "\n",
+    "# Apply the function to each row in the DataFrame\n",
+    "idx = 1\n",
+    "test_pgn = df['pgn'].iloc[idx]\n",
+    "desc = parse_pgn_from_string(test_pgn)\n",
+    "\n",
+    "print(\"PGN:\\n\")\n",
+    "print(test_pgn)\n",
+    "\n",
+    "print(\"\\nMoves List:\\n\")\n",
+    "print(desc[0])\n",
+    "\n",
+    "print(\"\\nExplanation:\\n\")\n",
+    "print(desc[1])\n",
+    "\n",
+    "print(\"\\nOutcome:\\n\")\n",
+    "print(desc[2])"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "af7548d8",
+   "metadata": {
+    "papermill": {
+     "duration": 0.012379,
+     "end_time": "2024-09-28T03:43:26.382874",
+     "exception": false,
+     "start_time": "2024-09-28T03:43:26.370495",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "We will fine tune with just the list of moves for now."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "id": "54c58c24",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:43:26.408781Z",
+     "iopub.status.busy": "2024-09-28T03:43:26.408448Z",
+     "iopub.status.idle": "2024-09-28T03:43:26.426680Z",
+     "shell.execute_reply": "2024-09-28T03:43:26.425648Z"
+    },
+    "papermill": {
+     "duration": 0.033458,
+     "end_time": "2024-09-28T03:43:26.428599",
+     "exception": false,
+     "start_time": "2024-09-28T03:43:26.395141",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Instruction:\n",
+      "Predict the next chess move in the sequence ['e4']\n",
+      "\n",
+      "Response:\n",
+      "The next move is 'e5'\n",
+      "-------\n",
+      "Instruction:\n",
+      "Predict the next chess move in the sequence ['e4', 'e5']\n",
+      "\n",
+      "Response:\n",
+      "The next move is 'Nf3'\n",
+      "-------\n",
+      "Instruction:\n",
+      "Predict the next chess move in the sequence ['e4', 'e5', 'Nf3']\n",
+      "\n",
+      "Response:\n",
+      "The next move is 'Nc6'\n",
+      "-------\n",
+      "Instruction:\n",
+      "Predict the next chess move in the sequence ['e4', 'e5', 'Nf3', 'Nc6']\n",
+      "\n",
+      "Response:\n",
+      "The next move is 'Bc4'\n",
+      "-------\n",
+      "Instruction:\n",
+      "Predict the next chess move in the sequence ['e4', 'e5', 'Nf3', 'Nc6', 'Bc4']\n",
+      "\n",
+      "Response:\n",
+      "The next move is 'Bc5'\n",
+      "-------\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Pgn to move list for training\n",
+    "\n",
+    "def load_data(pgn, n_moves=6, verb=False):\n",
+    "    data = []\n",
+    "    pgn_details = parse_pgn_from_string(pgn)\n",
+    "#     if len(pgn_details[0]) < n_moves:\n",
+    "#         if verb:\n",
+    "#             print(\"PGN move limit exceeded.\")\n",
+    "#             print(pgn_details[0])\n",
+    "#         return None\n",
+    "    if len(pgn_details[0]) < n_moves:\n",
+    "        n_moves = len(pgn_details[0])\n",
+    "    for i in range(1, n_moves):\n",
+    "            prev_moves = \"Predict the next chess move in the sequence \" + str(pgn_details[0][:i])\n",
+    "            best_move = f\"The next move is '{pgn_details[0][i]}'\"\n",
+    "\n",
+    "            template = \"Instruction:\\n{instruction}\\n\\nResponse:\\n{response}\"\n",
+    "            formated_temp = template.format(instruction=prev_moves,response=best_move)\n",
+    "            if verb:\n",
+    "                print(formated_temp + '\\n-------')\n",
+    "            data.append(formated_temp)\n",
+    "    return data\n",
+    "\n",
+    "test_data = load_data(test_pgn, verb=True)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "id": "2972b512",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:43:26.454785Z",
+     "iopub.status.busy": "2024-09-28T03:43:26.454465Z",
+     "iopub.status.idle": "2024-09-28T03:43:26.459986Z",
+     "shell.execute_reply": "2024-09-28T03:43:26.459113Z"
+    },
+    "papermill": {
+     "duration": 0.020611,
+     "end_time": "2024-09-28T03:43:26.461787",
+     "exception": false,
+     "start_time": "2024-09-28T03:43:26.441176",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "\"Instruction:\\nPredict the next chess move in the sequence ['e4']\\n\\nResponse:\\nThe next move is 'e5'\""
+      ]
+     },
+     "execution_count": 11,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# Lets see the data as string in the list\n",
+    "test_data[0]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "7c5f60d6",
+   "metadata": {
+    "papermill": {
+     "duration": 0.012439,
+     "end_time": "2024-09-28T03:43:26.486839",
+     "exception": false,
+     "start_time": "2024-09-28T03:43:26.474400",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## Train & Test splits\n",
+    "\n",
+    "Lets clean up the dataset and select our train and test sets."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "id": "129c8376",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:43:26.513514Z",
+     "iopub.status.busy": "2024-09-28T03:43:26.513183Z",
+     "iopub.status.idle": "2024-09-28T03:43:26.603279Z",
+     "shell.execute_reply": "2024-09-28T03:43:26.602182Z"
+    },
+    "papermill": {
+     "duration": 0.105445,
+     "end_time": "2024-09-28T03:43:26.605197",
+     "exception": false,
+     "start_time": "2024-09-28T03:43:26.499752",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "<class 'pandas.core.frame.DataFrame'>\n",
+      "RangeIndex: 66879 entries, 0 to 66878\n",
+      "Data columns (total 14 columns):\n",
+      " #   Column          Non-Null Count  Dtype \n",
+      "---  ------          --------------  ----- \n",
+      " 0   white_username  66879 non-null  object\n",
+      " 1   black_username  66879 non-null  object\n",
+      " 2   white_id        66879 non-null  object\n",
+      " 3   black_id        66879 non-null  object\n",
+      " 4   white_rating    66879 non-null  int64 \n",
+      " 5   black_rating    66879 non-null  int64 \n",
+      " 6   white_result    66879 non-null  object\n",
+      " 7   black_result    66879 non-null  object\n",
+      " 8   time_class      66879 non-null  object\n",
+      " 9   time_control    66879 non-null  object\n",
+      " 10  rules           66879 non-null  object\n",
+      " 11  rated           66879 non-null  bool  \n",
+      " 12  fen             66879 non-null  object\n",
+      " 13  pgn             66879 non-null  object\n",
+      "dtypes: bool(1), int64(2), object(11)\n",
+      "memory usage: 6.7+ MB\n"
+     ]
+    }
+   ],
+   "source": [
+    "# split the dataset into train and test\n",
+    "\n",
+    "df.info()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "id": "74cde6d4",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:43:26.631829Z",
+     "iopub.status.busy": "2024-09-28T03:43:26.631520Z",
+     "iopub.status.idle": "2024-09-28T03:43:26.642159Z",
+     "shell.execute_reply": "2024-09-28T03:43:26.641338Z"
+    },
+    "papermill": {
+     "duration": 0.026189,
+     "end_time": "2024-09-28T03:43:26.644064",
+     "exception": false,
+     "start_time": "2024-09-28T03:43:26.617875",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "array(['chess', 'chess960', 'threecheck', 'crazyhouse', 'kingofthehill'],\n",
+       "      dtype=object)"
+      ]
+     },
+     "execution_count": 13,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df['rules'].unique()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "id": "0adecc4e",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:43:26.670768Z",
+     "iopub.status.busy": "2024-09-28T03:43:26.670476Z",
+     "iopub.status.idle": "2024-09-28T03:43:26.990861Z",
+     "shell.execute_reply": "2024-09-28T03:43:26.989894Z"
+    },
+    "papermill": {
+     "duration": 0.336087,
+     "end_time": "2024-09-28T03:43:26.992923",
+     "exception": false,
+     "start_time": "2024-09-28T03:43:26.656836",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "<Axes: >"
+      ]
+     },
+     "execution_count": 14,
+     "metadata": {},
+     "output_type": "execute_result"
+    },
+    {
+     "data": {
+      "image/png": "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5Ozbt08DBgzQgAEDJEm5ubkaMGCA5s2bp4iICB04cEA/+clP9P3vf1+TJ0/WoEGD9P777/udJlq1apV69uypESNG6I477tBtt93m9xk4HTt2VFFRkY4dO6ZBgwbp0Ucf1bx58/w+S+fWW2/V6tWr9fLLL6tfv376wx/+oHXr1qlPnz7/Sj8AAIBFNPk9OcOGDZNhNHyJ5+bNgd9U2alTJ61evbrRmr59++r9999vtGbcuHEaN25cwNsDAABtD99dBQAALImQAwAALImQAwAALImQAwAALImQAwAALImQAwAALImQAwAALImQAwAALImQAwAALImQAwAALImQAwAALImQAwAALImQAwAALImQAwAALImQAwAALImQAwAALImQAwAALImQAwAALImQAwAALImQAwAALImQAwAALImQAwAALImQAwAALImQAwAALImQAwAALImQAwAALImQAwAALImQAwAALImQAwAALImQAwAALImQAwAALImQAwAALImQAwAALImQAwAALKnJIWfHjh268847lZycrLCwMK1bt84c8/l8mjNnjtLT03XNNdcoOTlZDzzwgL744gu/fXTt2lVhYWF+PwsXLvSrOXDggG6//XZFRUUpJSVFixYtqjOXtWvXqmfPnoqKilJ6ero2btzY1MMBAAAW1eSQc+7cOfXr10/Lli2rM3b+/Hl9+OGHevLJJ/Xhhx/qrbfe0uHDh/WTn/ykTu2CBQt04sQJ8+cXv/iFOVZZWamsrCylpqaqpKREzzzzjPLz8/Xyyy+bNbt27dL48eM1efJk7d+/X2PGjNGYMWNUVlbW1EMCAAAW1K6pG4wePVqjR4+ud6xjx45yuVx+61544QUNGTJE5eXl6tKli7m+Q4cOSkxMrHc/q1atUlVVlVasWCGbzabevXurtLRUS5Ys0dSpUyVJS5cu1ahRozR79mxJUkFBgVwul1544QUtX768qYcFAAAspskhp6nOnDmjsLAwxcbG+q1fuHChCgoK1KVLF02YMEGzZs1Su3bfTsftdmvo0KGy2WxmvdPp1NNPP62vvvpKcXFxcrvdys3N9dun0+n0O312Oa/XK6/Xay5XVlZK+vY0m8/n86utXb58PfzRp8Au75E9wmjN6Xxn2cMNv/82B6vdL3m8BUaPghPqfQp23i0acr755hvNmTNH48ePV0xMjLn+l7/8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fLnS0tK0ePFiSdLNN9+snTt36tlnnyXkAAAASS0Qci5VVVWl119/Xbm5uQoLCzPXr1q1Sq+//roSExN155136sknnzRfzXG73UpPT1dCQoJZ73Q6NX36dB08eFADBgyQ2+1WZmam3205nU7NnDmz0fl4vV55vV5zubKyUpLk8/nk8/n8amuXL18Pf63dJ3uE0Sq32xT2cMPvv6gfffpWY4+l1n68hQJ6FJxQ71Ow827RkLNu3TqdPn1aDz74oLluwoQJSk1NVXJysg4cOKA5c+bo8OHDeuuttyRJHo/HL+BIMpc9Hk+jNZWVlbpw4YLat29f73wKCws1f/78OuuLior8TpldyuVyBXewbVxr9WnRkFa52StSMLimtacQEtp6nzZu3BiwhuelwOhRcEK1T+fPnw+qrkVDzu9+9zuNHj1aycnJ5rqpU6ea/05PT1dSUpJGjBiho0ePqlu3bi05HeXl5Sk3N9dcrqysVEpKirKyshQTE+NX6/P55HK5NHLkSEVGRrbovEJZa/epT/7mq36bTWUPN1QwuEZP7guXtyYs8AZtFH36Vll+w6fcW/vxFgroUXBCvU+1Z2ICabGQ85e//EVbtmwxX6FpSEZGhiTpyJEj6tatmxITE7V3716/moqKCkky38eTmJhorru0JiYmpsFXcSTJbrfLbrfXWR8ZGdngL7mxMfxTa/XJWx06fwy9NWEhNd/W0tb7FMzjiOelwOhRcEK1T8HOucU+J+fVV19VfHy8srOzG60rLS2VJCUlJUmSHA6HPv74Y508edKscblciomJUa9evcya4uJiv/24XC45HI5mPAIAABDKWiTk1NTU6NVXX9WkSZPUrt0/Xyw6evSoCgoKVFJSouPHj+vdd9/VAw88oKFDh6pv376SpKysLPXq1Uv333+/PvroI23evFlz585VTk6O+SrMtGnT9Pnnn+uxxx7ToUOH9OKLL+rNN9/UrFmzWuJwAABACGqRkLNlyxaVl5frZz/7md96m82mLVu2KCsrSz179tSjjz6qsWPH6o9//KNZExERofXr1ysiIkIOh0M//elP9cADD/h9rk5aWpo2bNggl8ulfv36afHixXrllVe4fBwAAJha5D05WVlZMoy6l4GmpKRo+/btAbdPTU0NeIXBsGHDtH///iueIwAAsDa+uwoAAFgSIQcAAFgSIQcAAFgSIQcAAFgSIQcAAFgSIQcAAFgSIQcAAFgSIQcAAFgSIQcAAFgSIQcAAFgSIQcAAFhSi3x3FUJT18c3NHkbe4ShRUOkPvmb5a0Oa4FZAQBwZXglBwAAWBIhBwAAWBIhBwAAWBIhBwAAWBIhBwAAWBIhBwAAWBIhBwAAWBIhBwAAWBIhBwAAWBIhBwAAWBIhBwAAWBIhBwAAWBIhBwAAWBIhBwAAWBIhBwAAWBIhBwAAWBIhBwAAWBIhBwAAWBIhBwAAWBIhBwAAWBIhBwAAWFKzh5z8/HyFhYX5/fTs2dMc/+abb5STk6PrrrtO1157rcaOHauKigq/fZSXlys7O1vR0dGKj4/X7NmzdfHiRb+abdu2aeDAgbLb7erevbtWrlzZ3IcCAABCWIu8ktO7d2+dOHHC/Nm5c6c5NmvWLP3xj3/U2rVrtX37dn3xxRe65557zPHq6mplZ2erqqpKu3bt0muvvaaVK1dq3rx5Zs2xY8eUnZ2t4cOHq7S0VDNnztTDDz+szZs3t8ThAACAENSuRXbarp0SExPrrD9z5ox+97vfafXq1frxj38sSXr11Vd18803a/fu3brllltUVFSkTz75RFu2bFFCQoL69++vgoICzZkzR/n5+bLZbFq+fLnS0tK0ePFiSdLNN9+snTt36tlnn5XT6WyJQwIAACGmRULOZ599puTkZEVFRcnhcKiwsFBdunRRSUmJfD6fMjMzzdqePXuqS5cucrvduuWWW+R2u5Wenq6EhASzxul0avr06Tp48KAGDBggt9vtt4/ampkzZzY6L6/XK6/Xay5XVlZKknw+n3w+n19t7fLl663MHmE0fZtww++/qIseBYc+faux55y2+LzUVPQoOKHep2Dn3ewhJyMjQytXrlSPHj104sQJzZ8/X7fffrvKysrk8Xhks9kUGxvrt01CQoI8Ho8kyePx+AWc2vHascZqKisrdeHCBbVv377euRUWFmr+/Pl11hcVFSk6OrrebVwuV+CDtohFQ65824LBNc03EYuiR8Fp633auHFjwJq29Lx0pehRcEK1T+fPnw+qrtlDzujRo81/9+3bVxkZGUpNTdWbb77ZYPi4WvLy8pSbm2suV1ZWKiUlRVlZWYqJifGr9fl8crlcGjlypCIjI6/2VFtFn/ymv6fJHm6oYHCNntwXLm9NWAvMKvTRo+DQp2+V5Td8yr0tPi81FT0KTqj3qfZMTCAtcrrqUrGxsfr+97+vI0eOaOTIkaqqqtLp06f9Xs2pqKgw38OTmJiovXv3+u2j9uqrS2suvyKroqJCMTExjQYpu90uu91eZ31kZGSDv+TGxqzGW33lf1i8NWH/0vZtAT0KTlvvUzDPN23peelK0aPghGqfgp1zi39OztmzZ3X06FElJSVp0KBBioyMVHFxsTl++PBhlZeXy+FwSJIcDoc+/vhjnTx50qxxuVyKiYlRr169zJpL91FbU7sPAACAZg85v/rVr7R9+3YdP35cu3bt0t13362IiAiNHz9eHTt21OTJk5Wbm6v33ntPJSUleuihh+RwOHTLLbdIkrKystSrVy/df//9+uijj7R582bNnTtXOTk55qsw06ZN0+eff67HHntMhw4d0osvvqg333xTs2bNau7DAQAAIarZT1f97W9/0/jx4/Xll1/q+uuv12233abdu3fr+uuvlyQ9++yzCg8P19ixY+X1euV0OvXiiy+a20dERGj9+vWaPn26HA6HrrnmGk2aNEkLFiwwa9LS0rRhwwbNmjVLS5cu1Q033KBXXnmFy8cBAICp2UPOmjVrGh2PiorSsmXLtGzZsgZrUlNTA15hMGzYMO3fv/+K5ggAAKyP764CAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACWRMgBAACW1Owhp7CwUD/4wQ/UoUMHxcfHa8yYMTp8+LBfzbBhwxQWFub3M23aNL+a8vJyZWdnKzo6WvHx8Zo9e7YuXrzoV7Nt2zYNHDhQdrtd3bt318qVK5v7cAAAQIhq9pCzfft25eTkaPfu3XK5XPL5fMrKytK5c+f86qZMmaITJ06YP4sWLTLHqqurlZ2draqqKu3atUuvvfaaVq5cqXnz5pk1x44dU3Z2toYPH67S0lLNnDlTDz/8sDZv3tzchwQAAEJQu+be4aZNm/yWV65cqfj4eJWUlGjo0KHm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f0tLS0tTYmKiX08qKyu1Z88ev56cPn1aJSUlZs3WrVtVU1NjPjk7HA7t2LFDPp/PrHG5XOrRo0dInYJpir/97W/68ssvlZSUJKlt9MkwDM2YMUNvv/22tm7dWufUW3M9xhwOh98+amtC4XksUI/qU1paKkl+9yUr96g+NTU18nq93Icu1drvfP4uWrNmjWG3242VK1can3zyiTF16lQjNjbW713oVvboo48a27ZtM44dO2b8+c9/NjIzM43OnTsbJ0+eNAzj20sTu3TpYmzdutXYt2+f4XA4DIfDYW5fe2liVlaWUVpaamzatMm4/vrrQ/oS8q+//trYv3+/sX//fkOSsWTJEmP//v3GX/7yF8Mwvr2EPDY21njnnXeMAwcOGHfddVe9l5APGDDA2LNnj7Fz507jpptu8rs0+vTp00ZCQoJx//33G2VlZcaaNWuM6OjokLk02jAa79PXX39t/OpXvzLcbrdx7NgxY8uWLcbAgQONm266yfjmm2/MfVi9T9OnTzc6duxobNu2ze/y5/Pnz5s1zfEYq738d/bs2cann35qLFu2LGQu/w3UoyNHjhgLFiww9u3bZxw7dsx45513jBtvvNEYOnSouQ+r9+jxxx83tm/fbhw7dsw4cOCA8fjjjxthYWFGUVGRYRjch2oRchrw/PPPG126dDFsNpsxZMgQY/fu3a09pavm3nvvNZKSkgybzWZ873vfM+69917jyJEj5viFCxeM//iP/zDi4uKM6Oho4+677zZOnDjht4/jx48bo0ePNtq3b2907tzZePTRRw2fz3e1D6XZvPfee4akOj+TJk0yDOPby8iffPJJIyEhwbDb7caIESOMw4cP++3jyy+/NMaPH29ce+21RkxMjPHQQw8ZX3/9tV/NRx99ZNx2222G3W43vve97xkLFy68WofYLBrr0/nz542srCzj+uuvNyIjI43U1FRjypQpdf7nwep9qq8/koxXX33VrGmux9h7771n9O/f37DZbMaNN97odxvfZYF6VF5ebgwdOtTo1KmTYbfbje7duxuzZ8/2+5wcw7B2j372s58Zqamphs1mM66//npjxIgRZsAxDO5DtcIMwzCu3utGAAAAVwfvyQEAAJZEyAEAAJZEyAEAAJZEyAEAAJZEyAEAAJZEyAEAAJZEyAEAAJZEyAEAAJZEyAEAAJZEyAEAAJZEyAEAAJZEyAEAAJb0/wBYkRMrjmsYhAAAAABJRU5ErkJggg==",
+      "text/plain": [
+       "<Figure size 640x480 with 1 Axes>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "df['white_rating'].hist()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "id": "bbdf69dd",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:43:27.021314Z",
+     "iopub.status.busy": "2024-09-28T03:43:27.021012Z",
+     "iopub.status.idle": "2024-09-28T03:43:27.302564Z",
+     "shell.execute_reply": "2024-09-28T03:43:27.301643Z"
+    },
+    "papermill": {
+     "duration": 0.298038,
+     "end_time": "2024-09-28T03:43:27.304667",
+     "exception": false,
+     "start_time": "2024-09-28T03:43:27.006629",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "<Axes: >"
+      ]
+     },
+     "execution_count": 15,
+     "metadata": {},
+     "output_type": "execute_result"
+    },
+    {
+     "data": {
+      "image/png": "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OnjwoAoLC7V3715NmzatCdoCAADCXaNDzt69e9WvXz/169dPkpSfn69+/fppzpw5ioqK0v79+/WTn/xE3//+9zVx4kQNGDBA7733XsBpopUrV6p79+4aNmyYbrvtNt1yyy0Bn4HTvn17FRcX68iRIxowYIAeffRRzZkzJ+CzdG6++WatWrVKL730kvr06aM//vGPWrt2rXr16vWv9AMAAFhEo6/JGTJkiAyj4Vs8N20KflFlhw4dtGrVqkvW9O7dW++9994la8aMGaMxY8YEfTwAAND68N1VAADAkgg5AADAkgg5AADAkgg5AADAkgg5AADAkgg5AADAkgg5AADAkgg5AADAkgg5AADAkgg5AADAkgg5AADAkgg5AADAkgg5AADAkgg5AADAkgg5AADAkgg5AADAkgg5AADAkgg5AADAkgg5AADAkgg5AADAkgg5AADAkgg5AADAkgg5AADAkgg5AADAkgg5AADAkgg5AADAkgg5AADAkgg5AADAkgg5AADAkgg5AADAkgg5AADAkgg5AADAkgg5AADAkhodcrZv367bb79dKSkpioiI0Nq1a81lfr9fs2bNUkZGhq666iqlpKTovvvu0+effx6wjc6dOysiIiLgZ8GCBQE1+/fv16233qqYmBilpqZq4cKFdcayZs0ade/eXTExMcrIyNCGDRsauzsAAMCiGh1yzp49qz59+mjp0qV1lp07d04ffPCBnnzySX3wwQd64403VFFRoZ/85Cd1aufNm6fjx4+bPw8//LC5zOv1Kjs7W2lpaSotLdXTTz+twsJCvfTSS2bNzp07NXbsWE2cOFH79u3TqFGjNGrUKJWXlzd2lwAAgAW1aewKI0eO1MiRI+td1r59e7lcroB5zz//vAYNGqRjx46pU6dO5vx27drJ4XDUu52VK1eqqqpKy5cvl81mU8+ePVVWVqbFixdr8uTJkqQlS5ZoxIgRmjlzpiRp/vz5crlcev7557Vs2bLG7hYAALCYRoecxjp9+rQiIiIUHx8fMH/BggWaP3++OnXqpHHjxmnGjBlq0+bb4bjdbg0ePFg2m82sz8nJ0a9//Wt9+eWXSkhIkNvtVn5+fsA2c3JyAk6fXczn88nn85nTXq9X0ren2fx+f0Bt7fTF8xGIPgV3cY/sUUZLDuc7yx5pBPy3KVjtecnrLTh6FJpw71Oo427WkPPN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",
+      "text/plain": [
+       "<Figure size 640x480 with 1 Axes>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "df['black_rating'].hist()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 16,
+   "id": "20368448",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:43:27.334216Z",
+     "iopub.status.busy": "2024-09-28T03:43:27.333913Z",
+     "iopub.status.idle": "2024-09-28T03:43:28.236136Z",
+     "shell.execute_reply": "2024-09-28T03:43:28.235071Z"
+    },
+    "papermill": {
+     "duration": 0.919673,
+     "end_time": "2024-09-28T03:43:28.238811",
+     "exception": false,
+     "start_time": "2024-09-28T03:43:27.319138",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "from sklearn.model_selection import train_test_split\n",
+    "\n",
+    "df = df[df['rules']=='chess'] # Only keep chess PGN, exclude wild formats\n",
+    "\n",
+    "tune_size = 100 # Number of pgn samples to use in tuning\n",
+    "min_elo = 1_000 # I want the model to tune on the better half of players\n",
+    "\n",
+    "df = df[df['white_rating']>=min_elo]\n",
+    "\n",
+    "X = df.drop('white_rating', axis=1)\n",
+    "y = df['white_rating']\n",
+    "\n",
+    "X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=tune_size, random_state=42)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 17,
+   "id": "c20f6902",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:43:28.271043Z",
+     "iopub.status.busy": "2024-09-28T03:43:28.270257Z",
+     "iopub.status.idle": "2024-09-28T03:43:28.276690Z",
+     "shell.execute_reply": "2024-09-28T03:43:28.275769Z"
+    },
+    "papermill": {
+     "duration": 0.023699,
+     "end_time": "2024-09-28T03:43:28.278536",
+     "exception": false,
+     "start_time": "2024-09-28T03:43:28.254837",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "100"
+      ]
+     },
+     "execution_count": 17,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "len(X_train)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 18,
+   "id": "f1f876cc",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:43:28.307636Z",
+     "iopub.status.busy": "2024-09-28T03:43:28.307277Z",
+     "iopub.status.idle": "2024-09-28T03:43:28.591765Z",
+     "shell.execute_reply": "2024-09-28T03:43:28.590733Z"
+    },
+    "papermill": {
+     "duration": 0.301187,
+     "end_time": "2024-09-28T03:43:28.593738",
+     "exception": false,
+     "start_time": "2024-09-28T03:43:28.292551",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "<Axes: >"
+      ]
+     },
+     "execution_count": 18,
+     "metadata": {},
+     "output_type": "execute_result"
+    },
+    {
+     "data": {
+      "image/png": "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ArdHGb9/8T1qExy1Ca651SZcj0fV40Ti8a2pozbBNYXahDI3hzEmYo8Mr732miZPnqzS0lKlpKQE7FNUVKT9+/dr4MCBqqys1FNPPaWtW7fqk08+UdeuXQMek5eXp/z8/Brtq1atUkJCQljXAAAAIuPs2bOaPHmyKisrlZiYWGvfiAaWzMxMxcXF6W9/+9tFH+PxeNSnTx9lZ2dr/vz5AfsEusKSmpqqkydP1rng+uiftyFguzPKaP4wr+bsipLby+tufojaBEdtgmtutSnJywzLOB6PRwUFBRozZoxiY2PDMmZzQW2Cawq1cblcSkpKuqjAErGnhI4cOaL3339fb7zxRkjHxcbG6pprrtGBAweC9nE6nXI6nQGPjcQPxX2h9gdOt9dRZ5+WitoER22Cay61CffjUaQe45oDahOczbUJZV4R+xyWFStWqFOnTrrlltC+S+PChQv6+OOP1aVLlwjNDAAANDURCSxer1crVqzQ1KlTFRPjfxFnypQpmj17tm973rx5eu+99/T5559rz549+uUvf6kjR47onnvuicTUAABAExSRp4Tef/99lZaW6r/+679q7CstLVVU1Pc56euvv9aMGTNUVlamdu3aaejQodq+fbv69u0biakBAIAmKCKBJSMjQ8Fey7t582a/7SVLlmjJkiWRmAYAAGgm+C4hAABgPQILAACwHoEFAABYj8ACAACsR2ABAADWI7AAAADrEVgAAID1CCwAAMB6BBYAAGA9AgsAALAegQUAAFiPwAIAAKxHYAEAANYjsAAAAOsRWAAAgPUILAAAwHoEFgAAYD0CCwAAsB6BBQAAWI/AAgAArEdgAQAA1iOwAAAA6xFYAACA9QgsAADAegQWAABgPQILAACwHoEFAABYj8ACAACsR2ABAADWI7AAAADrEVgAAID1CCwAAMB6BBYAAGC9sAeWvLw8ORwOv1vv3r1rPeb1119X7969FR8frwEDBuidd94J97QAAEATFpErLP369dPx48d9t23btgXtu337dmVnZ2v69Onau3evsrKylJWVpZKSkkhMDQAANEERCSwxMTFKTk723ZKSkoL2ffbZZzV27FjNmjVLffr00fz58zVkyBAtXbo0ElMDAABNUEwkBt2/f79SUlIUHx+vtLQ0LViwQN26dQvYt6ioSLm5uX5tmZmZWrt2bdDx3W633G63b9vl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Jdbmx+677z45HA4988wzfu0tuTaffvqpbr31VrVp00aXXHKJrr32WpWWlvr2nzt3TjNnzlSHDh106aWXauLEiTU+XLK0tFS33HKLEhIS1KlTJ82aNUvffvttpJdXb3XVpaqqSjk5OeratatatWrl++LYH2qOdZG++7qVa6+9Vq1bt1anTp2UlZWlffv2+fUJ19o3b96sIUOGyOl06sorr9TKlSsjvbx6q6suX331lf7nf/5HvXr1UqtWrdStWzf96le/8n2/XrVmUxfTwr3zzjvmd7/7nXnjjTeMJLNmzRq//QsXLjRt2rQxa9euNf/4xz/Mrbfeanr27Gm++eYbX5+xY8eaQYMGmR07dpgPPvjAXHnllSY7O9u3v7Ky0nTu3Nn84he/MCUlJeaVV14xrVq1Mn/84x8bapn1UlttKioqTHp6unn11VfNZ599ZoqKiszw4cPN0KFD/cZoibX5oTfeeMMMGjTIpKSkmCVLlvjta6m1OXDggGnfvr2ZNWuW2bNnjzlw4IB58803TXl5ua/PfffdZ1JTU01hYaHZtWuXue6668z111/v2//tt9+a/v37m/T0dLN3717zzjvvmKSkJDN79uyGWmbI6qrLjBkzzBVXXGE2bdpkDh06ZP74xz+a6Oho8+abb/r6NMe6GGNMZmamWbFihSkpKTHFxcXmP/7jP0y3bt1MVVWVr0841v7555+bhIQEk5uba/75z3+a5557zkRHR5v169c36HovVl11+fjjj83tt99u1q1bZw4cOGAKCwvNVVddZSZOnOgboznVpcUHlh/68YOI1+s1ycnJ5sknn/S1VVRUGKfTaV555RVjjDH//Oc/jSTz97//3dfn3XffNQ6Hw3zxxRfGGGOef/55065dO+N2u319Hn74YdOrV68Iryh8avujXO3DDz80ksyRI0eMMdTm6NGj5rLLLjMlJSWme/fufoGlJddm0qRJ5pe//GXQYyoqKkxsbKx5/fXXfW2ffvqpkWSKioqMMd/98Y+KijJlZWW+Pi+88IJJTEz0q5etAtWlX79+Zt68eX5tQ4YMMb/73e+MMS2jLtVOnDhhJJktW7YYY8K39oceesj069fP71yTJk0ymZmZkV5SWPy4LoG89tprJi4uzng8HmNM86pLi39KqDaHDh1SWVmZ0tPTfW1t2rTRiBEjVFRUJEkqKipS27ZtNWzY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",
+      "text/plain": [
+       "<Figure size 640x480 with 1 Axes>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "X_train['black_rating'].hist()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 19,
+   "id": "63cad82e",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:43:28.624279Z",
+     "iopub.status.busy": "2024-09-28T03:43:28.623957Z",
+     "iopub.status.idle": "2024-09-28T03:43:28.640378Z",
+     "shell.execute_reply": "2024-09-28T03:43:28.639407Z"
+    },
+    "papermill": {
+     "duration": 0.033829,
+     "end_time": "2024-09-28T03:43:28.642301",
+     "exception": false,
+     "start_time": "2024-09-28T03:43:28.608472",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>white_username</th>\n",
+       "      <th>black_username</th>\n",
+       "      <th>white_id</th>\n",
+       "      <th>black_id</th>\n",
+       "      <th>black_rating</th>\n",
+       "      <th>white_result</th>\n",
+       "      <th>black_result</th>\n",
+       "      <th>time_class</th>\n",
+       "      <th>time_control</th>\n",
+       "      <th>rules</th>\n",
+       "      <th>rated</th>\n",
+       "      <th>fen</th>\n",
+       "      <th>pgn</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>66423</th>\n",
+       "      <td>abdulkadirbakari</td>\n",
+       "      <td>lucasmdcruz</td>\n",
+       "      <td>https://api.chess.com/pub/player/abdulkadirbakari</td>\n",
+       "      <td>https://api.chess.com/pub/player/lucasmdcruz</td>\n",
+       "      <td>1328</td>\n",
+       "      <td>win</td>\n",
+       "      <td>resigned</td>\n",
+       "      <td>rapid</td>\n",
+       "      <td>600</td>\n",
+       "      <td>chess</td>\n",
+       "      <td>True</td>\n",
+       "      <td>Q7/8/8/8/8/6k1/5p1p/5K2 w - -</td>\n",
+       "      <td>[Event \"Live Chess\"]\\n[Site \"Chess.com\"]\\n[Dat...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3581</th>\n",
+       "      <td>09Gladiator09</td>\n",
+       "      <td>naifey</td>\n",
+       "      <td>https://api.chess.com/pub/player/09gladiator09</td>\n",
+       "      <td>https://api.chess.com/pub/player/naifey</td>\n",
+       "      <td>1070</td>\n",
+       "      <td>win</td>\n",
+       "      <td>timeout</td>\n",
+       "      <td>bullet</td>\n",
+       "      <td>60</td>\n",
+       "      <td>chess</td>\n",
+       "      <td>True</td>\n",
+       "      <td>2k5/pp5p/2n5/8/4qp2/5N2/PBP2PKP/8 b - -</td>\n",
+       "      <td>[Event \"Live Chess\"]\\n[Site \"Chess.com\"]\\n[Dat...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2436</th>\n",
+       "      <td>turboteub69420</td>\n",
+       "      <td>06frestu</td>\n",
+       "      <td>https://api.chess.com/pub/player/turboteub69420</td>\n",
+       "      <td>https://api.chess.com/pub/player/06frestu</td>\n",
+       "      <td>984</td>\n",
+       "      <td>win</td>\n",
+       "      <td>timeout</td>\n",
+       "      <td>bullet</td>\n",
+       "      <td>60</td>\n",
+       "      <td>chess</td>\n",
+       "      <td>True</td>\n",
+       "      <td>8/2k5/8/2P5/1K6/4B3/8/8 b - -</td>\n",
+       "      <td>[Event \"Live Chess\"]\\n[Site \"Chess.com\"]\\n[Dat...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3428</th>\n",
+       "      <td>09Gladiator09</td>\n",
+       "      <td>NorthenerBMe</td>\n",
+       "      <td>https://api.chess.com/pub/player/09gladiator09</td>\n",
+       "      <td>https://api.chess.com/pub/player/northenerbme</td>\n",
+       "      <td>1101</td>\n",
+       "      <td>checkmated</td>\n",
+       "      <td>win</td>\n",
+       "      <td>bullet</td>\n",
+       "      <td>60</td>\n",
+       "      <td>chess</td>\n",
+       "      <td>True</td>\n",
+       "      <td>8/1p4k1/p3p3/5q2/3P4/P2P3p/1P2b2P/5r1K w - -</td>\n",
+       "      <td>[Event \"Live Chess\"]\\n[Site \"Chess.com\"]\\n[Dat...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>57758</th>\n",
+       "      <td>nikolam998</td>\n",
+       "      <td>Abd-alhamedyousef11</td>\n",
+       "      <td>https://api.chess.com/pub/player/nikolam998</td>\n",
+       "      <td>https://api.chess.com/pub/player/abd-alhamedyo...</td>\n",
+       "      <td>1270</td>\n",
+       "      <td>win</td>\n",
+       "      <td>resigned</td>\n",
+       "      <td>blitz</td>\n",
+       "      <td>600</td>\n",
+       "      <td>chess</td>\n",
+       "      <td>True</td>\n",
+       "      <td>1r3rk1/1p2ppb1/p2p2pp/2pBn3/P3P3/2BP4/1PP2P1K/...</td>\n",
+       "      <td>[Event \"Live Chess\"]\\n[Site \"Chess.com\"]\\n[Dat...</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "         white_username       black_username  \\\n",
+       "66423  abdulkadirbakari          lucasmdcruz   \n",
+       "3581      09Gladiator09               naifey   \n",
+       "2436     turboteub69420             06frestu   \n",
+       "3428      09Gladiator09         NorthenerBMe   \n",
+       "57758        nikolam998  Abd-alhamedyousef11   \n",
+       "\n",
+       "                                                white_id  \\\n",
+       "66423  https://api.chess.com/pub/player/abdulkadirbakari   \n",
+       "3581      https://api.chess.com/pub/player/09gladiator09   \n",
+       "2436     https://api.chess.com/pub/player/turboteub69420   \n",
+       "3428      https://api.chess.com/pub/player/09gladiator09   \n",
+       "57758        https://api.chess.com/pub/player/nikolam998   \n",
+       "\n",
+       "                                                black_id  black_rating  \\\n",
+       "66423       https://api.chess.com/pub/player/lucasmdcruz          1328   \n",
+       "3581             https://api.chess.com/pub/player/naifey          1070   \n",
+       "2436           https://api.chess.com/pub/player/06frestu           984   \n",
+       "3428       https://api.chess.com/pub/player/northenerbme          1101   \n",
+       "57758  https://api.chess.com/pub/player/abd-alhamedyo...          1270   \n",
+       "\n",
+       "      white_result black_result time_class time_control  rules  rated  \\\n",
+       "66423          win     resigned      rapid          600  chess   True   \n",
+       "3581           win      timeout     bullet           60  chess   True   \n",
+       "2436           win      timeout     bullet           60  chess   True   \n",
+       "3428    checkmated          win     bullet           60  chess   True   \n",
+       "57758          win     resigned      blitz          600  chess   True   \n",
+       "\n",
+       "                                                     fen  \\\n",
+       "66423                      Q7/8/8/8/8/6k1/5p1p/5K2 w - -   \n",
+       "3581             2k5/pp5p/2n5/8/4qp2/5N2/PBP2PKP/8 b - -   \n",
+       "2436                       8/2k5/8/2P5/1K6/4B3/8/8 b - -   \n",
+       "3428        8/1p4k1/p3p3/5q2/3P4/P2P3p/1P2b2P/5r1K w - -   \n",
+       "57758  1r3rk1/1p2ppb1/p2p2pp/2pBn3/P3P3/2BP4/1PP2P1K/...   \n",
+       "\n",
+       "                                                     pgn  \n",
+       "66423  [Event \"Live Chess\"]\\n[Site \"Chess.com\"]\\n[Dat...  \n",
+       "3581   [Event \"Live Chess\"]\\n[Site \"Chess.com\"]\\n[Dat...  \n",
+       "2436   [Event \"Live Chess\"]\\n[Site \"Chess.com\"]\\n[Dat...  \n",
+       "3428   [Event \"Live Chess\"]\\n[Site \"Chess.com\"]\\n[Dat...  \n",
+       "57758  [Event \"Live Chess\"]\\n[Site \"Chess.com\"]\\n[Dat...  "
+      ]
+     },
+     "execution_count": 19,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "X_train.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 20,
+   "id": "2f022651",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:43:28.672816Z",
+     "iopub.status.busy": "2024-09-28T03:43:28.672499Z",
+     "iopub.status.idle": "2024-09-28T03:43:28.677089Z",
+     "shell.execute_reply": "2024-09-28T03:43:28.676220Z"
+    },
+    "papermill": {
+     "duration": 0.021807,
+     "end_time": "2024-09-28T03:43:28.678960",
+     "exception": false,
+     "start_time": "2024-09-28T03:43:28.657153",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "def get_train_set(train):\n",
+    "    # PGNs to formated list of training points\n",
+    "    moves = train.map(load_data)\n",
+    "    pgn_train = moves.dropna() # drop nulls\n",
+    "    \n",
+    "    return pgn_train.sum()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "e12f924a",
+   "metadata": {
+    "papermill": {
+     "duration": 0.014322,
+     "end_time": "2024-09-28T03:43:28.707719",
+     "exception": false,
+     "start_time": "2024-09-28T03:43:28.693397",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## Inference before tuning\n",
+    "\n",
+    "Lets test the base model on a sample from the training set."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 21,
+   "id": "f6b4ffca",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:43:28.742040Z",
+     "iopub.status.busy": "2024-09-28T03:43:28.741727Z",
+     "iopub.status.idle": "2024-09-28T03:43:48.846163Z",
+     "shell.execute_reply": "2024-09-28T03:43:48.844746Z"
+    },
+    "papermill": {
+     "duration": 20.12245,
+     "end_time": "2024-09-28T03:43:48.848220",
+     "exception": false,
+     "start_time": "2024-09-28T03:43:28.725770",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Instruction:\n",
+      "Predict the next chess move in the sequence ['d4', 'Nf6', 'c4', 'e6']\n",
+      "\n",
+      "Response:\n",
+      "'Nc6'\n",
+      "\n",
+      "Explanation:\n",
+      "The next move is 'Nc6' because the knight on 'd4' is the only piece that can move to 'Nc6' and it is the only piece that can move to 'Nc6' that is not already on the board.\n",
+      "\n",
+      "The knight on 'd4' is the only piece that can move to 'Nc6' and it is the only piece that can move to 'Nc6' that is not already on the board.\n",
+      "\n",
+      "The knight on 'd4' is the only piece that can move to 'Nc6' and it is the only piece that can move to 'Nc6' that is not already on the board.\n",
+      "\n",
+      "The knight on 'd4' is the only piece that can move to 'Nc6' and it is the only piece that can move to 'Nc6' that is not already on the board.\n",
+      "\n",
+      "The knight on 'd4' is the only piece that can move to 'Nc6' and it is the only piece that can move to 'Nc6' that is not already on the board.\n",
+      "\n",
+      "The knight on 'd4' is the only piece that can move to 'Nc6' and it is the only piece that can move to 'Nc6' that is not already on the board.\n",
+      "\n",
+      "The knight on 'd4' is the only piece that can move to 'Nc6' and it is the only piece that can move to 'Nc6' that is not already on the board.\n",
+      "\n",
+      "The knight on 'd4' is the only piece that can move to 'Nc6' and it is the only piece that can move to 'Nc6' that is not already on the board.\n",
+      "\n",
+      "The knight on 'd4' is the only piece that can move to 'Nc6' and it is the only piece that can move to 'Nc6' that is not already on the board.\n",
+      "\n",
+      "The knight on 'd4' is the only piece that can move to 'Nc6' and it is the only piece that can move to 'Nc6' that is not already on the board.\n",
+      "\n",
+      "The knight on 'd4' is the only piece that can move to 'Nc6' and it is the only piece that can move to 'Nc\n"
+     ]
+    }
+   ],
+   "source": [
+    "prompt = template.format(\n",
+    "    instruction=\"Predict the next chess move in the sequence ['d4', 'Nf6', 'c4', 'e6']\",\n",
+    "    response=\"\",\n",
+    ")\n",
+    "print(gemma_lm.generate(prompt, max_length=500))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "1693b7b0",
+   "metadata": {
+    "papermill": {
+     "duration": 0.020767,
+     "end_time": "2024-09-28T03:43:48.885249",
+     "exception": false,
+     "start_time": "2024-09-28T03:43:48.864482",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## LoRA\n",
+    "\n",
+    "With the new formated dataset we will fine tune the model with LoRA."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 22,
+   "id": "1116c050",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:43:48.926196Z",
+     "iopub.status.busy": "2024-09-28T03:43:48.925510Z",
+     "iopub.status.idle": "2024-09-28T03:43:50.037607Z",
+     "shell.execute_reply": "2024-09-28T03:43:50.036563Z"
+    },
+    "papermill": {
+     "duration": 1.134109,
+     "end_time": "2024-09-28T03:43:50.039656",
+     "exception": false,
+     "start_time": "2024-09-28T03:43:48.905547",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "490\n"
+     ]
+    }
+   ],
+   "source": [
+    "train_set = get_train_set(X_train['pgn'])\n",
+    "\n",
+    "print(len(train_set))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 23,
+   "id": "d99cec61",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:43:50.071106Z",
+     "iopub.status.busy": "2024-09-28T03:43:50.070773Z",
+     "iopub.status.idle": "2024-09-28T03:43:50.076697Z",
+     "shell.execute_reply": "2024-09-28T03:43:50.075800Z"
+    },
+    "papermill": {
+     "duration": 0.023936,
+     "end_time": "2024-09-28T03:43:50.078720",
+     "exception": false,
+     "start_time": "2024-09-28T03:43:50.054784",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "[\"Instruction:\\nPredict the next chess move in the sequence ['e4']\\n\\nResponse:\\nThe next move is 'd5'\",\n",
+       " \"Instruction:\\nPredict the next chess move in the sequence ['e4', 'd5']\\n\\nResponse:\\nThe next move is 'exd5'\",\n",
+       " \"Instruction:\\nPredict the next chess move in the sequence ['e4', 'd5', 'exd5']\\n\\nResponse:\\nThe next move is 'Qxd5'\",\n",
+       " \"Instruction:\\nPredict the next chess move in the sequence ['e4', 'd5', 'exd5', 'Qxd5']\\n\\nResponse:\\nThe next move is 'd3'\",\n",
+       " \"Instruction:\\nPredict the next chess move in the sequence ['e4', 'd5', 'exd5', 'Qxd5', 'd3']\\n\\nResponse:\\nThe next move is 'Nc6'\",\n",
+       " \"Instruction:\\nPredict the next chess move in the sequence ['b3']\\n\\nResponse:\\nThe next move is 'c5'\",\n",
+       " \"Instruction:\\nPredict the next chess move in the sequence ['b3', 'c5']\\n\\nResponse:\\nThe next move is 'g3'\",\n",
+       " \"Instruction:\\nPredict the next chess move in the sequence ['b3', 'c5', 'g3']\\n\\nResponse:\\nThe next move is 'Nc6'\"]"
+      ]
+     },
+     "execution_count": 23,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "train_set[:8]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 24,
+   "id": "b2f68be1",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:43:50.109845Z",
+     "iopub.status.busy": "2024-09-28T03:43:50.109557Z",
+     "iopub.status.idle": "2024-09-28T03:43:50.383434Z",
+     "shell.execute_reply": "2024-09-28T03:43:50.382496Z"
+    },
+    "papermill": {
+     "duration": 0.291778,
+     "end_time": "2024-09-28T03:43:50.385455",
+     "exception": false,
+     "start_time": "2024-09-28T03:43:50.093677",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\"><span style=\"font-weight: bold\">Preprocessor: \"gemma_causal_lm_preprocessor\"</span>\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "\u001b[1mPreprocessor: \"gemma_causal_lm_preprocessor\"\u001b[0m\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\">┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n",
+       "┃<span style=\"font-weight: bold\"> Layer (type)                                                  </span>┃<span style=\"font-weight: bold\">                                   Config </span>┃\n",
+       "┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩\n",
+       "│ gemma_tokenizer (<span style=\"color: #0087ff; text-decoration-color: #0087ff\">GemmaTokenizer</span>)                              │                      Vocab size: <span style=\"color: #00af00; text-decoration-color: #00af00\">256,000</span> │\n",
+       "└───────────────────────────────────────────────────────────────┴──────────────────────────────────────────┘\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n",
+       "┃\u001b[1m \u001b[0m\u001b[1mLayer (type)                                                 \u001b[0m\u001b[1m \u001b[0m┃\u001b[1m \u001b[0m\u001b[1m                                  Config\u001b[0m\u001b[1m \u001b[0m┃\n",
+       "┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩\n",
+       "│ gemma_tokenizer (\u001b[38;5;33mGemmaTokenizer\u001b[0m)                              │                      Vocab size: \u001b[38;5;34m256,000\u001b[0m │\n",
+       "└───────────────────────────────────────────────────────────────┴──────────────────────────────────────────┘\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\"><span style=\"font-weight: bold\">Model: \"gemma_causal_lm\"</span>\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "\u001b[1mModel: \"gemma_causal_lm\"\u001b[0m\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\">┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n",
+       "┃<span style=\"font-weight: bold\"> Layer (type)                  </span>┃<span style=\"font-weight: bold\"> Output Shape              </span>┃<span style=\"font-weight: bold\">         Param # </span>┃<span style=\"font-weight: bold\"> Connected to               </span>┃\n",
+       "┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩\n",
+       "│ padding_mask (<span style=\"color: #0087ff; text-decoration-color: #0087ff\">InputLayer</span>)     │ (<span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>)              │               <span style=\"color: #00af00; text-decoration-color: #00af00\">0</span> │ -                          │\n",
+       "├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤\n",
+       "│ token_ids (<span style=\"color: #0087ff; text-decoration-color: #0087ff\">InputLayer</span>)        │ (<span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>)              │               <span style=\"color: #00af00; text-decoration-color: #00af00\">0</span> │ -                          │\n",
+       "├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤\n",
+       "│ gemma_backbone                │ (<span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00af00; text-decoration-color: #00af00\">2048</span>)        │   <span style=\"color: #00af00; text-decoration-color: #00af00\">2,507,536,384</span> │ padding_mask[<span style=\"color: #00af00; text-decoration-color: #00af00\">0</span>][<span style=\"color: #00af00; text-decoration-color: #00af00\">0</span>],        │\n",
+       "│ (<span style=\"color: #0087ff; text-decoration-color: #0087ff\">GemmaBackbone</span>)               │                           │                 │ token_ids[<span style=\"color: #00af00; text-decoration-color: #00af00\">0</span>][<span style=\"color: #00af00; text-decoration-color: #00af00\">0</span>]            │\n",
+       "├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤\n",
+       "│ token_embedding               │ (<span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00af00; text-decoration-color: #00af00\">256000</span>)      │     <span style=\"color: #00af00; text-decoration-color: #00af00\">524,288,000</span> │ gemma_backbone[<span style=\"color: #00af00; text-decoration-color: #00af00\">0</span>][<span style=\"color: #00af00; text-decoration-color: #00af00\">0</span>]       │\n",
+       "│ (<span style=\"color: #0087ff; text-decoration-color: #0087ff\">ReversibleEmbedding</span>)         │                           │                 │                            │\n",
+       "└───────────────────────────────┴───────────────────────────┴─────────────────┴────────────────────────────┘\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n",
+       "┃\u001b[1m \u001b[0m\u001b[1mLayer (type)                 \u001b[0m\u001b[1m \u001b[0m┃\u001b[1m \u001b[0m\u001b[1mOutput Shape             \u001b[0m\u001b[1m \u001b[0m┃\u001b[1m \u001b[0m\u001b[1m        Param #\u001b[0m\u001b[1m \u001b[0m┃\u001b[1m \u001b[0m\u001b[1mConnected to              \u001b[0m\u001b[1m \u001b[0m┃\n",
+       "┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩\n",
+       "│ padding_mask (\u001b[38;5;33mInputLayer\u001b[0m)     │ (\u001b[38;5;45mNone\u001b[0m, \u001b[38;5;45mNone\u001b[0m)              │               \u001b[38;5;34m0\u001b[0m │ -                          │\n",
+       "├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤\n",
+       "│ token_ids (\u001b[38;5;33mInputLayer\u001b[0m)        │ (\u001b[38;5;45mNone\u001b[0m, \u001b[38;5;45mNone\u001b[0m)              │               \u001b[38;5;34m0\u001b[0m │ -                          │\n",
+       "├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤\n",
+       "│ gemma_backbone                │ (\u001b[38;5;45mNone\u001b[0m, \u001b[38;5;45mNone\u001b[0m, \u001b[38;5;34m2048\u001b[0m)        │   \u001b[38;5;34m2,507,536,384\u001b[0m │ padding_mask[\u001b[38;5;34m0\u001b[0m][\u001b[38;5;34m0\u001b[0m],        │\n",
+       "│ (\u001b[38;5;33mGemmaBackbone\u001b[0m)               │                           │                 │ token_ids[\u001b[38;5;34m0\u001b[0m][\u001b[38;5;34m0\u001b[0m]            │\n",
+       "├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤\n",
+       "│ token_embedding               │ (\u001b[38;5;45mNone\u001b[0m, \u001b[38;5;45mNone\u001b[0m, \u001b[38;5;34m256000\u001b[0m)      │     \u001b[38;5;34m524,288,000\u001b[0m │ gemma_backbone[\u001b[38;5;34m0\u001b[0m][\u001b[38;5;34m0\u001b[0m]       │\n",
+       "│ (\u001b[38;5;33mReversibleEmbedding\u001b[0m)         │                           │                 │                            │\n",
+       "└───────────────────────────────┴───────────────────────────┴─────────────────┴────────────────────────────┘\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\"><span style=\"font-weight: bold\"> Total params: </span><span style=\"color: #00af00; text-decoration-color: #00af00\">2,507,536,384</span> (9.34 GB)\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "\u001b[1m Total params: \u001b[0m\u001b[38;5;34m2,507,536,384\u001b[0m (9.34 GB)\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\"><span style=\"font-weight: bold\"> Trainable params: </span><span style=\"color: #00af00; text-decoration-color: #00af00\">1,363,968</span> (5.20 MB)\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "\u001b[1m Trainable params: \u001b[0m\u001b[38;5;34m1,363,968\u001b[0m (5.20 MB)\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\"><span style=\"font-weight: bold\"> Non-trainable params: </span><span style=\"color: #00af00; text-decoration-color: #00af00\">2,506,172,416</span> (9.34 GB)\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "\u001b[1m Non-trainable params: \u001b[0m\u001b[38;5;34m2,506,172,416\u001b[0m (9.34 GB)\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "# Enable LoRA for the model and set the LoRA rank to 4.\n",
+    "gemma_lm.backbone.enable_lora(rank=4)\n",
+    "gemma_lm.summary()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 25,
+   "id": "9b49f70d",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:43:50.419231Z",
+     "iopub.status.busy": "2024-09-28T03:43:50.418931Z",
+     "iopub.status.idle": "2024-09-28T03:50:15.170783Z",
+     "shell.execute_reply": "2024-09-28T03:50:15.169822Z"
+    },
+    "papermill": {
+     "duration": 384.770791,
+     "end_time": "2024-09-28T03:50:15.172663",
+     "exception": false,
+     "start_time": "2024-09-28T03:43:50.401872",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "\u001b[1m490/490\u001b[0m \u001b[32m━━━━━━━━━━━━━━━━━━━━\u001b[0m\u001b[37m\u001b[0m \u001b[1m383s\u001b[0m 742ms/step - loss: 0.1394 - sparse_categorical_accuracy: 0.6283\n"
+     ]
+    },
+    {
+     "data": {
+      "text/plain": [
+       "<keras.src.callbacks.history.History at 0x7dce0f0df4c0>"
+      ]
+     },
+     "execution_count": 25,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# Limit the input sequence length to 512 (to control memory usage).\n",
+    "gemma_lm.preprocessor.sequence_length = 512\n",
+    "\n",
+    "# Use AdamW (a common optimizer for transformer models).\n",
+    "optimizer = keras.optimizers.AdamW(\n",
+    "    learning_rate=5e-5,\n",
+    "    weight_decay=0.01,\n",
+    ")\n",
+    "# Exclude layernorm and bias terms from decay.\n",
+    "optimizer.exclude_from_weight_decay(var_names=[\"bias\", \"scale\"])\n",
+    "\n",
+    "gemma_lm.compile(\n",
+    "    loss=keras.losses.SparseCategoricalCrossentropy(from_logits=True),\n",
+    "    optimizer=optimizer,\n",
+    "    weighted_metrics=[keras.metrics.SparseCategoricalAccuracy()],\n",
+    ")\n",
+    "\n",
+    "# Fit with train dataset\n",
+    "# 100 pgns, 318s\n",
+    "gemma_lm.fit(train_set, epochs=1, batch_size=1)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "6095dbae",
+   "metadata": {
+    "papermill": {
+     "duration": 0.053326,
+     "end_time": "2024-09-28T03:50:15.280296",
+     "exception": false,
+     "start_time": "2024-09-28T03:50:15.226970",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## Inference after fine tuning\n",
+    "\n",
+    "Now we will run the same promp as before and examine the improvement after LoRA."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 26,
+   "id": "4dfc7b80",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:50:15.394452Z",
+     "iopub.status.busy": "2024-09-28T03:50:15.394094Z",
+     "iopub.status.idle": "2024-09-28T03:50:23.747607Z",
+     "shell.execute_reply": "2024-09-28T03:50:23.746431Z"
+    },
+    "papermill": {
+     "duration": 8.41045,
+     "end_time": "2024-09-28T03:50:23.749862",
+     "exception": false,
+     "start_time": "2024-09-28T03:50:15.339412",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Instruction:\n",
+      "Predict the next chess move in the sequence ['e4', 'e5']\n",
+      "\n",
+      "Response:\n",
+      "The next move is 'Nf3'\n"
+     ]
+    }
+   ],
+   "source": [
+    "# On a new sample\n",
+    "prompt = template.format(\n",
+    "    instruction=\"Predict the next chess move in the sequence ['e4', 'e5']\",\n",
+    "    response=\"\",\n",
+    ")\n",
+    "print(gemma_lm.generate(prompt, max_length=256))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 27,
+   "id": "7fbff755",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:50:23.860746Z",
+     "iopub.status.busy": "2024-09-28T03:50:23.860378Z",
+     "iopub.status.idle": "2024-09-28T03:50:24.254419Z",
+     "shell.execute_reply": "2024-09-28T03:50:24.253432Z"
+    },
+    "papermill": {
+     "duration": 0.452109,
+     "end_time": "2024-09-28T03:50:24.256709",
+     "exception": false,
+     "start_time": "2024-09-28T03:50:23.804600",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Instruction:\n",
+      "Predict the next chess move in the sequence ['e4', 'e5']\n",
+      "\n",
+      "Response:\n",
+      "The next move is 'Nf3'\n"
+     ]
+    }
+   ],
+   "source": [
+    "# On a new sample\n",
+    "prompt = template.format(\n",
+    "    instruction=\"Predict the next chess move in the sequence ['e4', 'e5']\",\n",
+    "    response=\"\",\n",
+    ")\n",
+    "print(gemma_lm.generate(prompt, max_length=256))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 28,
+   "id": "083f3a68",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:50:24.366697Z",
+     "iopub.status.busy": "2024-09-28T03:50:24.366324Z",
+     "iopub.status.idle": "2024-09-28T03:50:24.759180Z",
+     "shell.execute_reply": "2024-09-28T03:50:24.757959Z"
+    },
+    "papermill": {
+     "duration": 0.449893,
+     "end_time": "2024-09-28T03:50:24.761119",
+     "exception": false,
+     "start_time": "2024-09-28T03:50:24.311226",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Instruction:\n",
+      "Predict the next chess move in the sequence ['e4', 'e5', 'Nf3']\n",
+      "\n",
+      "Response:\n",
+      "The next move is 'd4'\n"
+     ]
+    }
+   ],
+   "source": [
+    "# On a new sample\n",
+    "prompt = template.format(\n",
+    "    instruction=\"Predict the next chess move in the sequence ['e4', 'e5', 'Nf3']\",\n",
+    "    response=\"\",\n",
+    ")\n",
+    "print(gemma_lm.generate(prompt, max_length=256))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 29,
+   "id": "0b0fce32",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:50:24.872815Z",
+     "iopub.status.busy": "2024-09-28T03:50:24.872466Z",
+     "iopub.status.idle": "2024-09-28T03:50:25.264087Z",
+     "shell.execute_reply": "2024-09-28T03:50:25.263135Z"
+    },
+    "papermill": {
+     "duration": 0.450782,
+     "end_time": "2024-09-28T03:50:25.266297",
+     "exception": false,
+     "start_time": "2024-09-28T03:50:24.815515",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Instruction:\n",
+      "Predict the next chess move in the sequence ['e4', 'e5', 'Nf3', 'Nc6']\n",
+      "\n",
+      "Response:\n",
+      "The next move is 'd4'\n"
+     ]
+    }
+   ],
+   "source": [
+    "# On a new sample\n",
+    "prompt = template.format(\n",
+    "    instruction=\"Predict the next chess move in the sequence ['e4', 'e5', 'Nf3', 'Nc6']\",\n",
+    "    response=\"\",\n",
+    ")\n",
+    "print(gemma_lm.generate(prompt, max_length=256))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "7cc1a921",
+   "metadata": {
+    "papermill": {
+     "duration": 0.053328,
+     "end_time": "2024-09-28T03:50:25.373830",
+     "exception": false,
+     "start_time": "2024-09-28T03:50:25.320502",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## Interesting...it can predict past the 5th move, despite thats not in the training set...\n",
+    "\n",
+    "Lets see how it plays a game on its own."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 30,
+   "id": "d49399fc",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:50:25.483919Z",
+     "iopub.status.busy": "2024-09-28T03:50:25.483563Z",
+     "iopub.status.idle": "2024-09-28T03:50:28.582940Z",
+     "shell.execute_reply": "2024-09-28T03:50:28.581846Z"
+    },
+    "papermill": {
+     "duration": 3.156833,
+     "end_time": "2024-09-28T03:50:28.584984",
+     "exception": false,
+     "start_time": "2024-09-28T03:50:25.428151",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "['Nf3', 'e6', 'Nc6']\n",
+      "['Nf3', 'e6', 'Nc6', 'd5']\n",
+      "['Nf3', 'e6', 'Nc6', 'd5', 'Nf6']\n",
+      "['Nf3', 'e6', 'Nc6', 'd5', 'Nf6', 'e4']\n",
+      "['Nf3', 'e6', 'Nc6', 'd5', 'Nf6', 'e4', 'Bg4']\n",
+      "['Nf3', 'e6', 'Nc6', 'd5', 'Nf6', 'e4', 'Bg4', 'Bg5']\n",
+      "['Nf3', 'e6', 'Nc6', 'd5', 'Nf6', 'e4', 'Bg4', 'Bg5', 'e5']\n",
+      "['Nf3', 'e6', 'Nc6', 'd5', 'Nf6', 'e4', 'Bg4', 'Bg5', 'e5', 'e3']\n"
+     ]
+    }
+   ],
+   "source": [
+    "def play_game(moves, n=5):\n",
+    "    move_list = moves\n",
+    "    while len(move_list) < n:\n",
+    "        prompt = template.format(\n",
+    "            instruction=f\"Predict the next chess move in the sequence {str(move_list)}\",\n",
+    "            response=\"\",\n",
+    "        )\n",
+    "\n",
+    "        output = gemma_lm.generate(prompt, max_length=256)\n",
+    "\n",
+    "        move_list.append(output.split(' ')[-1].strip(\"'\"))\n",
+    "\n",
+    "        print(move_list)\n",
+    "    \n",
+    "play_game(['Nf3', 'e6'], 10)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "6b08f9b5",
+   "metadata": {
+    "papermill": {
+     "duration": 0.055609,
+     "end_time": "2024-09-28T03:50:28.695871",
+     "exception": false,
+     "start_time": "2024-09-28T03:50:28.640262",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "# Save LoRA weights\n",
+    "\n",
+    "We only need to save the LoRA weights, which are very small compared to the model itsef."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 31,
+   "id": "1d2ec66a",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:50:28.846664Z",
+     "iopub.status.busy": "2024-09-28T03:50:28.846001Z",
+     "iopub.status.idle": "2024-09-28T03:50:28.919506Z",
+     "shell.execute_reply": "2024-09-28T03:50:28.918318Z"
+    },
+    "papermill": {
+     "duration": 0.168576,
+     "end_time": "2024-09-28T03:50:28.921817",
+     "exception": false,
+     "start_time": "2024-09-28T03:50:28.753241",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "model_name = \"gemma_2b_enV2-100pgn\"\n",
+    "gemma_lm.backbone.save_lora_weights(f\"/kaggle/working/{model_name}.lora.h5\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "2815b1ca",
+   "metadata": {
+    "papermill": {
+     "duration": 0.054149,
+     "end_time": "2024-09-28T03:50:29.036628",
+     "exception": false,
+     "start_time": "2024-09-28T03:50:28.982479",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "Example of how to load the model with LoRA weights."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 32,
+   "id": "09950b45",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-09-28T03:50:29.147116Z",
+     "iopub.status.busy": "2024-09-28T03:50:29.146694Z",
+     "iopub.status.idle": "2024-09-28T03:50:29.151275Z",
+     "shell.execute_reply": "2024-09-28T03:50:29.150398Z"
+    },
+    "papermill": {
+     "duration": 0.062311,
+     "end_time": "2024-09-28T03:50:29.153337",
+     "exception": false,
+     "start_time": "2024-09-28T03:50:29.091026",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "# # Load the model like this\n",
+    "\n",
+    "# # Do TPU and GPU stuff\n",
+    "# # .... \n",
+    "\n",
+    "# # Define paths\n",
+    "# LORA_WEIGHTS_PATH = f\"/kaggle/working/{model_name}.lora.h5\"\n",
+    "\n",
+    "# model = keras_nlp.models.GemmaCausalLM.from_preset('gemma_instruct_2b_en')\n",
+    "\n",
+    "# model.backbone.enable_lora(rank=4)\n",
+    "\n",
+    "# model.preprocessor.sequence_length = 512\n",
+    "\n",
+    "# # Load only the lora weights\n",
+    "# model.backbone.load_lora_weights(LORA_WEIGHTS_PATH)\n",
+    "\n",
+    "# output = model.generate(\"blah blah I'm a prompt template with stuff in me\", max_length=512)\n"
+   ]
+  }
+ ],
+ "metadata": {
+  "kaggle": {
+   "accelerator": "gpu",
+   "dataSources": [
+    {
+     "datasetId": 1488027,
+     "sourceId": 2458363,
+     "sourceType": "datasetVersion"
+    },
+    {
+     "modelId": 3533,
+     "modelInstanceId": 5171,
+     "sourceId": 11371,
+     "sourceType": "modelInstanceVersion"
+    }
+   ],
+   "dockerImageVersionId": 30776,
+   "isGpuEnabled": true,
+   "isInternetEnabled": true,
+   "language": "python",
+   "sourceType": "notebook"
+  },
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.10.14"
+  },
+  "papermill": {
+   "default_parameters": {},
+   "duration": 570.915603,
+   "end_time": "2024-09-28T03:50:32.429231",
+   "environment_variables": {},
+   "exception": null,
+   "input_path": "__notebook__.ipynb",
+   "output_path": "__notebook__.ipynb",
+   "parameters": {},
+   "start_time": "2024-09-28T03:41:01.513628",
+   "version": "2.6.0"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
