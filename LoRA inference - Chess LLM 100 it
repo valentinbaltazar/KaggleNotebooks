@@ -1,0 +1,1892 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "1082bdb9",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:08:23.912623Z",
+     "iopub.status.busy": "2024-10-06T19:08:23.912247Z",
+     "iopub.status.idle": "2024-10-06T19:08:23.922130Z",
+     "shell.execute_reply": "2024-10-06T19:08:23.921352Z"
+    },
+    "papermill": {
+     "duration": 0.02305,
+     "end_time": "2024-10-06T19:08:23.924129",
+     "exception": false,
+     "start_time": "2024-10-06T19:08:23.901079",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "# Modify inputs here\n",
+    "tune_size = 1_00\n",
+    "model_name = \"gemma_instruct_2b_en\"\n",
+    "# lora_h5 = \"gemma_2b_enV2-100\"\n",
+    "LORA_WEIGHTS_PATH = \"/kaggle/input/lora-weights-instruction-tuned/gemma_instruct_2b_en-100pgn.lora.h5\"\n",
+    "\n",
+    "file_name = f'lora_infer_{tune_size}-it.pkl'"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "7849c2ae",
+   "metadata": {
+    "papermill": {
+     "duration": 0.009225,
+     "end_time": "2024-10-06T19:08:23.942927",
+     "exception": false,
+     "start_time": "2024-10-06T19:08:23.933702",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "# Imports"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "d13e5e5e",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:08:23.963418Z",
+     "iopub.status.busy": "2024-10-06T19:08:23.963162Z",
+     "iopub.status.idle": "2024-10-06T19:08:49.682784Z",
+     "shell.execute_reply": "2024-10-06T19:08:49.681625Z"
+    },
+    "papermill": {
+     "duration": 25.732151,
+     "end_time": "2024-10-06T19:08:49.685234",
+     "exception": false,
+     "start_time": "2024-10-06T19:08:23.953083",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "# Install Keras\n",
+    "!pip install -q -U keras-nlp\n",
+    "!pip install -q -U keras>=3"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "5c2eb300",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:08:49.705776Z",
+     "iopub.status.busy": "2024-10-06T19:08:49.705443Z",
+     "iopub.status.idle": "2024-10-06T19:08:49.710091Z",
+     "shell.execute_reply": "2024-10-06T19:08:49.709253Z"
+    },
+    "papermill": {
+     "duration": 0.017012,
+     "end_time": "2024-10-06T19:08:49.711897",
+     "exception": false,
+     "start_time": "2024-10-06T19:08:49.694885",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "import os\n",
+    "\n",
+    "os.environ[\"KERAS_BACKEND\"] = \"jax\"  # Or \"torch\" or \"tensorflow\".\n",
+    "# Avoid memory fragmentation on JAX backend.\n",
+    "os.environ[\"XLA_PYTHON_CLIENT_MEM_FRACTION\"]=\"1.00\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "3d32f490",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:08:49.731735Z",
+     "iopub.status.busy": "2024-10-06T19:08:49.731162Z",
+     "iopub.status.idle": "2024-10-06T19:09:53.243652Z",
+     "shell.execute_reply": "2024-10-06T19:09:53.242737Z"
+    },
+    "papermill": {
+     "duration": 63.524619,
+     "end_time": "2024-10-06T19:09:53.245832",
+     "exception": false,
+     "start_time": "2024-10-06T19:08:49.721213",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "normalizer.cc(51) LOG(INFO) precompiled_charsmap is empty. use identity normalization.\n"
+     ]
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\"><span style=\"font-weight: bold\">Preprocessor: \"gemma_causal_lm_preprocessor\"</span>\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "\u001b[1mPreprocessor: \"gemma_causal_lm_preprocessor\"\u001b[0m\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\">┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n",
+       "┃<span style=\"font-weight: bold\"> Layer (type)                                                  </span>┃<span style=\"font-weight: bold\">                                   Config </span>┃\n",
+       "┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩\n",
+       "│ gemma_tokenizer (<span style=\"color: #0087ff; text-decoration-color: #0087ff\">GemmaTokenizer</span>)                              │                      Vocab size: <span style=\"color: #00af00; text-decoration-color: #00af00\">256,000</span> │\n",
+       "└───────────────────────────────────────────────────────────────┴──────────────────────────────────────────┘\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n",
+       "┃\u001b[1m \u001b[0m\u001b[1mLayer (type)                                                 \u001b[0m\u001b[1m \u001b[0m┃\u001b[1m \u001b[0m\u001b[1m                                  Config\u001b[0m\u001b[1m \u001b[0m┃\n",
+       "┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩\n",
+       "│ gemma_tokenizer (\u001b[38;5;33mGemmaTokenizer\u001b[0m)                              │                      Vocab size: \u001b[38;5;34m256,000\u001b[0m │\n",
+       "└───────────────────────────────────────────────────────────────┴──────────────────────────────────────────┘\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\"><span style=\"font-weight: bold\">Model: \"gemma_causal_lm\"</span>\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "\u001b[1mModel: \"gemma_causal_lm\"\u001b[0m\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\">┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n",
+       "┃<span style=\"font-weight: bold\"> Layer (type)                  </span>┃<span style=\"font-weight: bold\"> Output Shape              </span>┃<span style=\"font-weight: bold\">         Param # </span>┃<span style=\"font-weight: bold\"> Connected to               </span>┃\n",
+       "┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩\n",
+       "│ padding_mask (<span style=\"color: #0087ff; text-decoration-color: #0087ff\">InputLayer</span>)     │ (<span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>)              │               <span style=\"color: #00af00; text-decoration-color: #00af00\">0</span> │ -                          │\n",
+       "├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤\n",
+       "│ token_ids (<span style=\"color: #0087ff; text-decoration-color: #0087ff\">InputLayer</span>)        │ (<span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>)              │               <span style=\"color: #00af00; text-decoration-color: #00af00\">0</span> │ -                          │\n",
+       "├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤\n",
+       "│ gemma_backbone                │ (<span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00af00; text-decoration-color: #00af00\">2048</span>)        │   <span style=\"color: #00af00; text-decoration-color: #00af00\">2,506,172,416</span> │ padding_mask[<span style=\"color: #00af00; text-decoration-color: #00af00\">0</span>][<span style=\"color: #00af00; text-decoration-color: #00af00\">0</span>],        │\n",
+       "│ (<span style=\"color: #0087ff; text-decoration-color: #0087ff\">GemmaBackbone</span>)               │                           │                 │ token_ids[<span style=\"color: #00af00; text-decoration-color: #00af00\">0</span>][<span style=\"color: #00af00; text-decoration-color: #00af00\">0</span>]            │\n",
+       "├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤\n",
+       "│ token_embedding               │ (<span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00af00; text-decoration-color: #00af00\">256000</span>)      │     <span style=\"color: #00af00; text-decoration-color: #00af00\">524,288,000</span> │ gemma_backbone[<span style=\"color: #00af00; text-decoration-color: #00af00\">0</span>][<span style=\"color: #00af00; text-decoration-color: #00af00\">0</span>]       │\n",
+       "│ (<span style=\"color: #0087ff; text-decoration-color: #0087ff\">ReversibleEmbedding</span>)         │                           │                 │                            │\n",
+       "└───────────────────────────────┴───────────────────────────┴─────────────────┴────────────────────────────┘\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n",
+       "┃\u001b[1m \u001b[0m\u001b[1mLayer (type)                 \u001b[0m\u001b[1m \u001b[0m┃\u001b[1m \u001b[0m\u001b[1mOutput Shape             \u001b[0m\u001b[1m \u001b[0m┃\u001b[1m \u001b[0m\u001b[1m        Param #\u001b[0m\u001b[1m \u001b[0m┃\u001b[1m \u001b[0m\u001b[1mConnected to              \u001b[0m\u001b[1m \u001b[0m┃\n",
+       "┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩\n",
+       "│ padding_mask (\u001b[38;5;33mInputLayer\u001b[0m)     │ (\u001b[38;5;45mNone\u001b[0m, \u001b[38;5;45mNone\u001b[0m)              │               \u001b[38;5;34m0\u001b[0m │ -                          │\n",
+       "├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤\n",
+       "│ token_ids (\u001b[38;5;33mInputLayer\u001b[0m)        │ (\u001b[38;5;45mNone\u001b[0m, \u001b[38;5;45mNone\u001b[0m)              │               \u001b[38;5;34m0\u001b[0m │ -                          │\n",
+       "├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤\n",
+       "│ gemma_backbone                │ (\u001b[38;5;45mNone\u001b[0m, \u001b[38;5;45mNone\u001b[0m, \u001b[38;5;34m2048\u001b[0m)        │   \u001b[38;5;34m2,506,172,416\u001b[0m │ padding_mask[\u001b[38;5;34m0\u001b[0m][\u001b[38;5;34m0\u001b[0m],        │\n",
+       "│ (\u001b[38;5;33mGemmaBackbone\u001b[0m)               │                           │                 │ token_ids[\u001b[38;5;34m0\u001b[0m][\u001b[38;5;34m0\u001b[0m]            │\n",
+       "├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤\n",
+       "│ token_embedding               │ (\u001b[38;5;45mNone\u001b[0m, \u001b[38;5;45mNone\u001b[0m, \u001b[38;5;34m256000\u001b[0m)      │     \u001b[38;5;34m524,288,000\u001b[0m │ gemma_backbone[\u001b[38;5;34m0\u001b[0m][\u001b[38;5;34m0\u001b[0m]       │\n",
+       "│ (\u001b[38;5;33mReversibleEmbedding\u001b[0m)         │                           │                 │                            │\n",
+       "└───────────────────────────────┴───────────────────────────┴─────────────────┴────────────────────────────┘\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\"><span style=\"font-weight: bold\"> Total params: </span><span style=\"color: #00af00; text-decoration-color: #00af00\">2,506,172,416</span> (9.34 GB)\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "\u001b[1m Total params: \u001b[0m\u001b[38;5;34m2,506,172,416\u001b[0m (9.34 GB)\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\"><span style=\"font-weight: bold\"> Trainable params: </span><span style=\"color: #00af00; text-decoration-color: #00af00\">2,506,172,416</span> (9.34 GB)\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "\u001b[1m Trainable params: \u001b[0m\u001b[38;5;34m2,506,172,416\u001b[0m (9.34 GB)\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\"><span style=\"font-weight: bold\"> Non-trainable params: </span><span style=\"color: #00af00; text-decoration-color: #00af00\">0</span> (0.00 B)\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "\u001b[1m Non-trainable params: \u001b[0m\u001b[38;5;34m0\u001b[0m (0.00 B)\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "import keras\n",
+    "import keras_nlp\n",
+    "\n",
+    "# Load the model\n",
+    "gemma_lm = keras_nlp.models.GemmaCausalLM.from_preset(model_name)\n",
+    "gemma_lm.summary()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "5e92c2b1",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:09:53.268657Z",
+     "iopub.status.busy": "2024-10-06T19:09:53.268152Z",
+     "iopub.status.idle": "2024-10-06T19:09:53.521460Z",
+     "shell.execute_reply": "2024-10-06T19:09:53.520640Z"
+    },
+    "papermill": {
+     "duration": 0.266734,
+     "end_time": "2024-10-06T19:09:53.523394",
+     "exception": false,
+     "start_time": "2024-10-06T19:09:53.256660",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\"><span style=\"font-weight: bold\">Preprocessor: \"gemma_causal_lm_preprocessor\"</span>\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "\u001b[1mPreprocessor: \"gemma_causal_lm_preprocessor\"\u001b[0m\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\">┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n",
+       "┃<span style=\"font-weight: bold\"> Layer (type)                                                  </span>┃<span style=\"font-weight: bold\">                                   Config </span>┃\n",
+       "┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩\n",
+       "│ gemma_tokenizer (<span style=\"color: #0087ff; text-decoration-color: #0087ff\">GemmaTokenizer</span>)                              │                      Vocab size: <span style=\"color: #00af00; text-decoration-color: #00af00\">256,000</span> │\n",
+       "└───────────────────────────────────────────────────────────────┴──────────────────────────────────────────┘\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n",
+       "┃\u001b[1m \u001b[0m\u001b[1mLayer (type)                                                 \u001b[0m\u001b[1m \u001b[0m┃\u001b[1m \u001b[0m\u001b[1m                                  Config\u001b[0m\u001b[1m \u001b[0m┃\n",
+       "┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩\n",
+       "│ gemma_tokenizer (\u001b[38;5;33mGemmaTokenizer\u001b[0m)                              │                      Vocab size: \u001b[38;5;34m256,000\u001b[0m │\n",
+       "└───────────────────────────────────────────────────────────────┴──────────────────────────────────────────┘\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\"><span style=\"font-weight: bold\">Model: \"gemma_causal_lm\"</span>\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "\u001b[1mModel: \"gemma_causal_lm\"\u001b[0m\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\">┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n",
+       "┃<span style=\"font-weight: bold\"> Layer (type)                  </span>┃<span style=\"font-weight: bold\"> Output Shape              </span>┃<span style=\"font-weight: bold\">         Param # </span>┃<span style=\"font-weight: bold\"> Connected to               </span>┃\n",
+       "┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩\n",
+       "│ padding_mask (<span style=\"color: #0087ff; text-decoration-color: #0087ff\">InputLayer</span>)     │ (<span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>)              │               <span style=\"color: #00af00; text-decoration-color: #00af00\">0</span> │ -                          │\n",
+       "├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤\n",
+       "│ token_ids (<span style=\"color: #0087ff; text-decoration-color: #0087ff\">InputLayer</span>)        │ (<span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>)              │               <span style=\"color: #00af00; text-decoration-color: #00af00\">0</span> │ -                          │\n",
+       "├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤\n",
+       "│ gemma_backbone                │ (<span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00af00; text-decoration-color: #00af00\">2048</span>)        │   <span style=\"color: #00af00; text-decoration-color: #00af00\">2,507,536,384</span> │ padding_mask[<span style=\"color: #00af00; text-decoration-color: #00af00\">0</span>][<span style=\"color: #00af00; text-decoration-color: #00af00\">0</span>],        │\n",
+       "│ (<span style=\"color: #0087ff; text-decoration-color: #0087ff\">GemmaBackbone</span>)               │                           │                 │ token_ids[<span style=\"color: #00af00; text-decoration-color: #00af00\">0</span>][<span style=\"color: #00af00; text-decoration-color: #00af00\">0</span>]            │\n",
+       "├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤\n",
+       "│ token_embedding               │ (<span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00af00; text-decoration-color: #00af00\">256000</span>)      │     <span style=\"color: #00af00; text-decoration-color: #00af00\">524,288,000</span> │ gemma_backbone[<span style=\"color: #00af00; text-decoration-color: #00af00\">0</span>][<span style=\"color: #00af00; text-decoration-color: #00af00\">0</span>]       │\n",
+       "│ (<span style=\"color: #0087ff; text-decoration-color: #0087ff\">ReversibleEmbedding</span>)         │                           │                 │                            │\n",
+       "└───────────────────────────────┴───────────────────────────┴─────────────────┴────────────────────────────┘\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n",
+       "┃\u001b[1m \u001b[0m\u001b[1mLayer (type)                 \u001b[0m\u001b[1m \u001b[0m┃\u001b[1m \u001b[0m\u001b[1mOutput Shape             \u001b[0m\u001b[1m \u001b[0m┃\u001b[1m \u001b[0m\u001b[1m        Param #\u001b[0m\u001b[1m \u001b[0m┃\u001b[1m \u001b[0m\u001b[1mConnected to              \u001b[0m\u001b[1m \u001b[0m┃\n",
+       "┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩\n",
+       "│ padding_mask (\u001b[38;5;33mInputLayer\u001b[0m)     │ (\u001b[38;5;45mNone\u001b[0m, \u001b[38;5;45mNone\u001b[0m)              │               \u001b[38;5;34m0\u001b[0m │ -                          │\n",
+       "├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤\n",
+       "│ token_ids (\u001b[38;5;33mInputLayer\u001b[0m)        │ (\u001b[38;5;45mNone\u001b[0m, \u001b[38;5;45mNone\u001b[0m)              │               \u001b[38;5;34m0\u001b[0m │ -                          │\n",
+       "├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤\n",
+       "│ gemma_backbone                │ (\u001b[38;5;45mNone\u001b[0m, \u001b[38;5;45mNone\u001b[0m, \u001b[38;5;34m2048\u001b[0m)        │   \u001b[38;5;34m2,507,536,384\u001b[0m │ padding_mask[\u001b[38;5;34m0\u001b[0m][\u001b[38;5;34m0\u001b[0m],        │\n",
+       "│ (\u001b[38;5;33mGemmaBackbone\u001b[0m)               │                           │                 │ token_ids[\u001b[38;5;34m0\u001b[0m][\u001b[38;5;34m0\u001b[0m]            │\n",
+       "├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤\n",
+       "│ token_embedding               │ (\u001b[38;5;45mNone\u001b[0m, \u001b[38;5;45mNone\u001b[0m, \u001b[38;5;34m256000\u001b[0m)      │     \u001b[38;5;34m524,288,000\u001b[0m │ gemma_backbone[\u001b[38;5;34m0\u001b[0m][\u001b[38;5;34m0\u001b[0m]       │\n",
+       "│ (\u001b[38;5;33mReversibleEmbedding\u001b[0m)         │                           │                 │                            │\n",
+       "└───────────────────────────────┴───────────────────────────┴─────────────────┴────────────────────────────┘\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\"><span style=\"font-weight: bold\"> Total params: </span><span style=\"color: #00af00; text-decoration-color: #00af00\">2,507,536,384</span> (9.34 GB)\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "\u001b[1m Total params: \u001b[0m\u001b[38;5;34m2,507,536,384\u001b[0m (9.34 GB)\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\"><span style=\"font-weight: bold\"> Trainable params: </span><span style=\"color: #00af00; text-decoration-color: #00af00\">1,363,968</span> (5.20 MB)\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "\u001b[1m Trainable params: \u001b[0m\u001b[38;5;34m1,363,968\u001b[0m (5.20 MB)\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\"><span style=\"font-weight: bold\"> Non-trainable params: </span><span style=\"color: #00af00; text-decoration-color: #00af00\">2,506,172,416</span> (9.34 GB)\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "\u001b[1m Non-trainable params: \u001b[0m\u001b[38;5;34m2,506,172,416\u001b[0m (9.34 GB)\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "# Enable LoRA for the model and set the LoRA rank to 4.\n",
+    "gemma_lm.backbone.enable_lora(rank=4)\n",
+    "gemma_lm.summary()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "a077470b",
+   "metadata": {
+    "papermill": {
+     "duration": 0.011372,
+     "end_time": "2024-10-06T19:09:53.546616",
+     "exception": false,
+     "start_time": "2024-10-06T19:09:53.535244",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "# LoRA Weights"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "83b52368",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:09:53.570820Z",
+     "iopub.status.busy": "2024-10-06T19:09:53.570496Z",
+     "iopub.status.idle": "2024-10-06T19:09:53.717306Z",
+     "shell.execute_reply": "2024-10-06T19:09:53.716512Z"
+    },
+    "papermill": {
+     "duration": 0.161231,
+     "end_time": "2024-10-06T19:09:53.719376",
+     "exception": false,
+     "start_time": "2024-10-06T19:09:53.558145",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "# Limit the input sequence length to 512 (to control memory usage).\n",
+    "gemma_lm.preprocessor.sequence_length = 512\n",
+    "\n",
+    "# Define paths\n",
+    "# model_name = \"gemma_2b_enV2-100\"\n",
+    "# model_name = \"gemma_2b_enV2-1k\"\n",
+    "\n",
+    "# LORA_WEIGHTS_PATH = f\"/kaggle/input/lora-updated-chess-llm/{lora_h5}\"\n",
+    "\n",
+    "# Load only the lora weights\n",
+    "gemma_lm.backbone.load_lora_weights(LORA_WEIGHTS_PATH)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "5645307c",
+   "metadata": {
+    "papermill": {
+     "duration": 0.011325,
+     "end_time": "2024-10-06T19:09:53.742459",
+     "exception": false,
+     "start_time": "2024-10-06T19:09:53.731134",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "# Test Set"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "bec4fc0a",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:09:53.766713Z",
+     "iopub.status.busy": "2024-10-06T19:09:53.766411Z",
+     "iopub.status.idle": "2024-10-06T19:09:55.666906Z",
+     "shell.execute_reply": "2024-10-06T19:09:55.665907Z"
+    },
+    "papermill": {
+     "duration": 1.915199,
+     "end_time": "2024-10-06T19:09:55.669086",
+     "exception": false,
+     "start_time": "2024-10-06T19:09:53.753887",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>white_username</th>\n",
+       "      <th>black_username</th>\n",
+       "      <th>white_id</th>\n",
+       "      <th>black_id</th>\n",
+       "      <th>white_rating</th>\n",
+       "      <th>black_rating</th>\n",
+       "      <th>white_result</th>\n",
+       "      <th>black_result</th>\n",
+       "      <th>time_class</th>\n",
+       "      <th>time_control</th>\n",
+       "      <th>rules</th>\n",
+       "      <th>rated</th>\n",
+       "      <th>fen</th>\n",
+       "      <th>pgn</th>\n",
+       "      <th>move_seq</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>-Amos-</td>\n",
+       "      <td>miniman2804</td>\n",
+       "      <td>https://api.chess.com/pub/player/-amos-</td>\n",
+       "      <td>https://api.chess.com/pub/player/miniman2804</td>\n",
+       "      <td>1708</td>\n",
+       "      <td>1608</td>\n",
+       "      <td>win</td>\n",
+       "      <td>checkmated</td>\n",
+       "      <td>daily</td>\n",
+       "      <td>1/259200</td>\n",
+       "      <td>chess</td>\n",
+       "      <td>True</td>\n",
+       "      <td>r2r4/p2p1p1p/b6R/n1p1kp2/2P2P2/3BP3/PP5P/4K2R ...</td>\n",
+       "      <td>[Event \"Enjoyable games 2 - Round 1\"]\\n[Site \"...</td>\n",
+       "      <td>(d4, Nf6, c4, e6, Nc3, Bb4, Qb3, Bxc3+, Qxc3, ...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>-Amos-</td>\n",
+       "      <td>koltcho69</td>\n",
+       "      <td>https://api.chess.com/pub/player/-amos-</td>\n",
+       "      <td>https://api.chess.com/pub/player/koltcho69</td>\n",
+       "      <td>1726</td>\n",
+       "      <td>1577</td>\n",
+       "      <td>win</td>\n",
+       "      <td>resigned</td>\n",
+       "      <td>daily</td>\n",
+       "      <td>1/172800</td>\n",
+       "      <td>chess</td>\n",
+       "      <td>True</td>\n",
+       "      <td>8/5Q1k/4n1pp/8/7P/2N2b2/PP3P2/5K2 b - - 1 33</td>\n",
+       "      <td>[Event \"Rapid Rats - Board 5\"]\\n[Site \"Chess.c...</td>\n",
+       "      <td>(e4, e5, Nf3, Nc6, Bc4, Bc5, c3, a6, d4, exd4,...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>-Amos-</td>\n",
+       "      <td>enhmandah</td>\n",
+       "      <td>https://api.chess.com/pub/player/-amos-</td>\n",
+       "      <td>https://api.chess.com/pub/player/enhmandah</td>\n",
+       "      <td>1727</td>\n",
+       "      <td>842</td>\n",
+       "      <td>win</td>\n",
+       "      <td>resigned</td>\n",
+       "      <td>daily</td>\n",
+       "      <td>1/172800</td>\n",
+       "      <td>chess</td>\n",
+       "      <td>True</td>\n",
+       "      <td>rn1q1b1r/kb2p1pp/2p5/p1Q5/N1BP2n1/4PN2/1P3PPP/...</td>\n",
+       "      <td>[Event \"CHESS BOARD CLASH - Round 1\"]\\n[Site \"...</td>\n",
+       "      <td>(d4, d5, e3, c6, c4, dxc4, Bxc4, b5, Bb3, a5, ...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>enhmandah</td>\n",
+       "      <td>-Amos-</td>\n",
+       "      <td>https://api.chess.com/pub/player/enhmandah</td>\n",
+       "      <td>https://api.chess.com/pub/player/-amos-</td>\n",
+       "      <td>819</td>\n",
+       "      <td>1727</td>\n",
+       "      <td>checkmated</td>\n",
+       "      <td>win</td>\n",
+       "      <td>daily</td>\n",
+       "      <td>1/172800</td>\n",
+       "      <td>chess</td>\n",
+       "      <td>True</td>\n",
+       "      <td>r3kb1r/pp3ppp/3p1n2/2pKp3/P3P3/1P6/4qP1P/QNB5 ...</td>\n",
+       "      <td>[Event \"CHESS BOARD CLASH - Round 1\"]\\n[Site \"...</td>\n",
+       "      <td>(e4, c5, b3, Nc6, a4, d6, Bb5, Bd7, Qf3, Nd4, ...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>-Amos-</td>\n",
+       "      <td>Shalllow-Blue</td>\n",
+       "      <td>https://api.chess.com/pub/player/-amos-</td>\n",
+       "      <td>https://api.chess.com/pub/player/shalllow-blue</td>\n",
+       "      <td>1729</td>\n",
+       "      <td>1116</td>\n",
+       "      <td>win</td>\n",
+       "      <td>resigned</td>\n",
+       "      <td>daily</td>\n",
+       "      <td>1/172800</td>\n",
+       "      <td>chess</td>\n",
+       "      <td>True</td>\n",
+       "      <td>r3b2r/pp6/2pPpR1k/4n3/2P3Q1/3B4/PP4PP/R5K1 b -...</td>\n",
+       "      <td>[Event \"CHESS BOARD CLASH - Round 1\"]\\n[Site \"...</td>\n",
+       "      <td>(d4, e6, c4, Qf6, Nf3, d6, Bg5, Qg6, Nc3, c6, ...</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "  white_username black_username                                    white_id  \\\n",
+       "0         -Amos-    miniman2804     https://api.chess.com/pub/player/-amos-   \n",
+       "1         -Amos-      koltcho69     https://api.chess.com/pub/player/-amos-   \n",
+       "2         -Amos-      enhmandah     https://api.chess.com/pub/player/-amos-   \n",
+       "3      enhmandah         -Amos-  https://api.chess.com/pub/player/enhmandah   \n",
+       "4         -Amos-  Shalllow-Blue     https://api.chess.com/pub/player/-amos-   \n",
+       "\n",
+       "                                         black_id  white_rating  black_rating  \\\n",
+       "0    https://api.chess.com/pub/player/miniman2804          1708          1608   \n",
+       "1      https://api.chess.com/pub/player/koltcho69          1726          1577   \n",
+       "2      https://api.chess.com/pub/player/enhmandah          1727           842   \n",
+       "3         https://api.chess.com/pub/player/-amos-           819          1727   \n",
+       "4  https://api.chess.com/pub/player/shalllow-blue          1729          1116   \n",
+       "\n",
+       "  white_result black_result time_class time_control  rules  rated  \\\n",
+       "0          win   checkmated      daily     1/259200  chess   True   \n",
+       "1          win     resigned      daily     1/172800  chess   True   \n",
+       "2          win     resigned      daily     1/172800  chess   True   \n",
+       "3   checkmated          win      daily     1/172800  chess   True   \n",
+       "4          win     resigned      daily     1/172800  chess   True   \n",
+       "\n",
+       "                                                 fen  \\\n",
+       "0  r2r4/p2p1p1p/b6R/n1p1kp2/2P2P2/3BP3/PP5P/4K2R ...   \n",
+       "1       8/5Q1k/4n1pp/8/7P/2N2b2/PP3P2/5K2 b - - 1 33   \n",
+       "2  rn1q1b1r/kb2p1pp/2p5/p1Q5/N1BP2n1/4PN2/1P3PPP/...   \n",
+       "3  r3kb1r/pp3ppp/3p1n2/2pKp3/P3P3/1P6/4qP1P/QNB5 ...   \n",
+       "4  r3b2r/pp6/2pPpR1k/4n3/2P3Q1/3B4/PP4PP/R5K1 b -...   \n",
+       "\n",
+       "                                                 pgn  \\\n",
+       "0  [Event \"Enjoyable games 2 - Round 1\"]\\n[Site \"...   \n",
+       "1  [Event \"Rapid Rats - Board 5\"]\\n[Site \"Chess.c...   \n",
+       "2  [Event \"CHESS BOARD CLASH - Round 1\"]\\n[Site \"...   \n",
+       "3  [Event \"CHESS BOARD CLASH - Round 1\"]\\n[Site \"...   \n",
+       "4  [Event \"CHESS BOARD CLASH - Round 1\"]\\n[Site \"...   \n",
+       "\n",
+       "                                            move_seq  \n",
+       "0  (d4, Nf6, c4, e6, Nc3, Bb4, Qb3, Bxc3+, Qxc3, ...  \n",
+       "1  (e4, e5, Nf3, Nc6, Bc4, Bc5, c3, a6, d4, exd4,...  \n",
+       "2  (d4, d5, e3, c6, c4, dxc4, Bxc4, b5, Bb3, a5, ...  \n",
+       "3  (e4, c5, b3, Nc6, a4, d6, Bb5, Bd7, Qf3, Nd4, ...  \n",
+       "4  (d4, e6, c4, Qf6, Nf3, d6, Bg5, Qg6, Nc3, c6, ...  "
+      ]
+     },
+     "execution_count": 7,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "import pandas as pd\n",
+    "\n",
+    "df0 = pd.read_pickle('/kaggle/input/60k-chess-clean/club_games_data.pkl')\n",
+    "\n",
+    "df0.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "01632614",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:09:55.694531Z",
+     "iopub.status.busy": "2024-10-06T19:09:55.694232Z",
+     "iopub.status.idle": "2024-10-06T19:09:55.792401Z",
+     "shell.execute_reply": "2024-10-06T19:09:55.791237Z"
+    },
+    "papermill": {
+     "duration": 0.113033,
+     "end_time": "2024-10-06T19:09:55.794409",
+     "exception": false,
+     "start_time": "2024-10-06T19:09:55.681376",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "<class 'pandas.core.frame.DataFrame'>\n",
+      "RangeIndex: 66879 entries, 0 to 66878\n",
+      "Data columns (total 15 columns):\n",
+      " #   Column          Non-Null Count  Dtype \n",
+      "---  ------          --------------  ----- \n",
+      " 0   white_username  66879 non-null  object\n",
+      " 1   black_username  66879 non-null  object\n",
+      " 2   white_id        66879 non-null  object\n",
+      " 3   black_id        66879 non-null  object\n",
+      " 4   white_rating    66879 non-null  int64 \n",
+      " 5   black_rating    66879 non-null  int64 \n",
+      " 6   white_result    66879 non-null  object\n",
+      " 7   black_result    66879 non-null  object\n",
+      " 8   time_class      66879 non-null  object\n",
+      " 9   time_control    66879 non-null  object\n",
+      " 10  rules           66879 non-null  object\n",
+      " 11  rated           66879 non-null  bool  \n",
+      " 12  fen             66879 non-null  object\n",
+      " 13  pgn             66879 non-null  object\n",
+      " 14  move_seq        65270 non-null  object\n",
+      "dtypes: bool(1), int64(2), object(12)\n",
+      "memory usage: 7.2+ MB\n"
+     ]
+    }
+   ],
+   "source": [
+    "df0.info()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "109aa1f8",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:09:55.819312Z",
+     "iopub.status.busy": "2024-10-06T19:09:55.819014Z",
+     "iopub.status.idle": "2024-10-06T19:09:55.944739Z",
+     "shell.execute_reply": "2024-10-06T19:09:55.943941Z"
+    },
+    "papermill": {
+     "duration": 0.140605,
+     "end_time": "2024-10-06T19:09:55.946964",
+     "exception": false,
+     "start_time": "2024-10-06T19:09:55.806359",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "df = df0[df0['rules']=='chess'].dropna() # Classic chess only, and drop None"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "id": "f66e3156",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:09:55.973361Z",
+     "iopub.status.busy": "2024-10-06T19:09:55.972956Z",
+     "iopub.status.idle": "2024-10-06T19:09:56.060066Z",
+     "shell.execute_reply": "2024-10-06T19:09:56.059021Z"
+    },
+    "papermill": {
+     "duration": 0.102441,
+     "end_time": "2024-10-06T19:09:56.062155",
+     "exception": false,
+     "start_time": "2024-10-06T19:09:55.959714",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "<class 'pandas.core.frame.DataFrame'>\n",
+      "Index: 65034 entries, 0 to 66878\n",
+      "Data columns (total 15 columns):\n",
+      " #   Column          Non-Null Count  Dtype \n",
+      "---  ------          --------------  ----- \n",
+      " 0   white_username  65034 non-null  object\n",
+      " 1   black_username  65034 non-null  object\n",
+      " 2   white_id        65034 non-null  object\n",
+      " 3   black_id        65034 non-null  object\n",
+      " 4   white_rating    65034 non-null  int64 \n",
+      " 5   black_rating    65034 non-null  int64 \n",
+      " 6   white_result    65034 non-null  object\n",
+      " 7   black_result    65034 non-null  object\n",
+      " 8   time_class      65034 non-null  object\n",
+      " 9   time_control    65034 non-null  object\n",
+      " 10  rules           65034 non-null  object\n",
+      " 11  rated           65034 non-null  bool  \n",
+      " 12  fen             65034 non-null  object\n",
+      " 13  pgn             65034 non-null  object\n",
+      " 14  move_seq        65034 non-null  object\n",
+      "dtypes: bool(1), int64(2), object(12)\n",
+      "memory usage: 7.5+ MB\n"
+     ]
+    }
+   ],
+   "source": [
+    "df.info()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "id": "7844b1ad",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:09:56.087754Z",
+     "iopub.status.busy": "2024-10-06T19:09:56.087437Z",
+     "iopub.status.idle": "2024-10-06T19:09:56.998104Z",
+     "shell.execute_reply": "2024-10-06T19:09:56.997268Z"
+    },
+    "papermill": {
+     "duration": 0.925944,
+     "end_time": "2024-10-06T19:09:57.000377",
+     "exception": false,
+     "start_time": "2024-10-06T19:09:56.074433",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "from sklearn.model_selection import train_test_split\n",
+    "\n",
+    "# tune_size = 1_000 # Number of pgn samples to use in tuning\n",
+    "min_elo = 1_000 # I want the model to tune on the better half of players\n",
+    "\n",
+    "\n",
+    "df_low_elo = df[df['white_rating']<min_elo]\n",
+    "\n",
+    "df = df[df['white_rating']>=min_elo]\n",
+    "\n",
+    "\n",
+    "X = df.drop('white_rating', axis=1)\n",
+    "y = df['white_rating']\n",
+    "\n",
+    "X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=tune_size, random_state=42)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "id": "885debcc",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:09:57.027171Z",
+     "iopub.status.busy": "2024-10-06T19:09:57.026505Z",
+     "iopub.status.idle": "2024-10-06T19:09:57.031922Z",
+     "shell.execute_reply": "2024-10-06T19:09:57.031065Z"
+    },
+    "papermill": {
+     "duration": 0.020699,
+     "end_time": "2024-10-06T19:09:57.033975",
+     "exception": false,
+     "start_time": "2024-10-06T19:09:57.013276",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "100 47858\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(len(X_train),len(X_test))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "id": "467ed7d5",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:09:57.059550Z",
+     "iopub.status.busy": "2024-10-06T19:09:57.058866Z",
+     "iopub.status.idle": "2024-10-06T19:09:57.063175Z",
+     "shell.execute_reply": "2024-10-06T19:09:57.062301Z"
+    },
+    "papermill": {
+     "duration": 0.019104,
+     "end_time": "2024-10-06T19:09:57.065164",
+     "exception": false,
+     "start_time": "2024-10-06T19:09:57.046060",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "17076\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(len(df_low_elo))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "7c5b12de",
+   "metadata": {
+    "papermill": {
+     "duration": 0.011919,
+     "end_time": "2024-10-06T19:09:57.089223",
+     "exception": false,
+     "start_time": "2024-10-06T19:09:57.077304",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "We will use the test set as the high elo test, and then the filtered lower elo as another test set."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "id": "a3fc0ce8",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:09:57.114816Z",
+     "iopub.status.busy": "2024-10-06T19:09:57.114158Z",
+     "iopub.status.idle": "2024-10-06T19:09:57.122247Z",
+     "shell.execute_reply": "2024-10-06T19:09:57.121359Z"
+    },
+    "papermill": {
+     "duration": 0.022925,
+     "end_time": "2024-10-06T19:09:57.124205",
+     "exception": false,
+     "start_time": "2024-10-06T19:09:57.101280",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "3      (e4, c5, b3, Nc6, a4, d6, Bb5, Bd7, Qf3, Nd4, ...\n",
+      "223    (e4, d5, e5, d4, c3, f6, cxd4, Qxd4, Nf3, Qe4+...\n",
+      "Name: move_seq, dtype: object\n",
+      "{('e4', 'd5', 'e5'), ('e4', 'c5', 'b3'), ('e4',), ('e4', 'd5'), ('e4', 'c5')}\n"
+     ]
+    }
+   ],
+   "source": [
+    "def seq_set(seq_data, n):\n",
+    "    # List of all UNIQUE sequences of length < n in a given dataset of moves\n",
+    "    sequences = set()\n",
+    "    \n",
+    "    for seq in seq_data:\n",
+    "        max_n = n if len(seq) >= n else len(seq)\n",
+    "        sequences.update(seq[:t] for t in range(1,max_n+1))\n",
+    "\n",
+    "    return sequences\n",
+    "        \n",
+    "# Trained on n=6, max seq of 5 and asked to predict 6th\n",
+    "print(df_low_elo['move_seq'][:2])\n",
+    "print(seq_set(df_low_elo['move_seq'][:2], 3))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "id": "6bed96f3",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:09:57.150472Z",
+     "iopub.status.busy": "2024-10-06T19:09:57.149743Z",
+     "iopub.status.idle": "2024-10-06T19:09:57.211804Z",
+     "shell.execute_reply": "2024-10-06T19:09:57.211001Z"
+    },
+    "papermill": {
+     "duration": 0.077264,
+     "end_time": "2024-10-06T19:09:57.213738",
+     "exception": false,
+     "start_time": "2024-10-06T19:09:57.136474",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "21407"
+      ]
+     },
+     "execution_count": 15,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "low_elo_seq = seq_set(df_low_elo['move_seq'], 6)\n",
+    "len(low_elo_seq)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 16,
+   "id": "586110a9",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:09:57.240065Z",
+     "iopub.status.busy": "2024-10-06T19:09:57.239760Z",
+     "iopub.status.idle": "2024-10-06T19:09:57.398000Z",
+     "shell.execute_reply": "2024-10-06T19:09:57.397140Z"
+    },
+    "papermill": {
+     "duration": 0.173489,
+     "end_time": "2024-10-06T19:09:57.399980",
+     "exception": false,
+     "start_time": "2024-10-06T19:09:57.226491",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "31953"
+      ]
+     },
+     "execution_count": 16,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "high_elo_seq = seq_set(X_test['move_seq'], 6)\n",
+    "len(high_elo_seq)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 17,
+   "id": "ad3ef0af",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:09:57.426575Z",
+     "iopub.status.busy": "2024-10-06T19:09:57.426287Z",
+     "iopub.status.idle": "2024-10-06T19:09:57.435319Z",
+     "shell.execute_reply": "2024-10-06T19:09:57.434452Z"
+    },
+    "papermill": {
+     "duration": 0.024612,
+     "end_time": "2024-10-06T19:09:57.437289",
+     "exception": false,
+     "start_time": "2024-10-06T19:09:57.412677",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "8146"
+      ]
+     },
+     "execution_count": 17,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "intersect = low_elo_seq & high_elo_seq\n",
+    "\n",
+    "len(intersect)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 18,
+   "id": "17ee12fe",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:09:57.464160Z",
+     "iopub.status.busy": "2024-10-06T19:09:57.463196Z",
+     "iopub.status.idle": "2024-10-06T19:09:57.472037Z",
+     "shell.execute_reply": "2024-10-06T19:09:57.471230Z"
+    },
+    "papermill": {
+     "duration": 0.024116,
+     "end_time": "2024-10-06T19:09:57.473907",
+     "exception": false,
+     "start_time": "2024-10-06T19:09:57.449791",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "13261"
+      ]
+     },
+     "execution_count": 18,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "low_set = low_elo_seq - high_elo_seq\n",
+    "len(low_set)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 19,
+   "id": "c0a025ef",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:09:57.501361Z",
+     "iopub.status.busy": "2024-10-06T19:09:57.500819Z",
+     "iopub.status.idle": "2024-10-06T19:09:57.511864Z",
+     "shell.execute_reply": "2024-10-06T19:09:57.511028Z"
+    },
+    "papermill": {
+     "duration": 0.027193,
+     "end_time": "2024-10-06T19:09:57.513839",
+     "exception": false,
+     "start_time": "2024-10-06T19:09:57.486646",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "23807"
+      ]
+     },
+     "execution_count": 19,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "high_set = high_elo_seq - low_elo_seq\n",
+    "len(high_set)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "fa466a9e",
+   "metadata": {
+    "papermill": {
+     "duration": 0.012911,
+     "end_time": "2024-10-06T19:09:57.540277",
+     "exception": false,
+     "start_time": "2024-10-06T19:09:57.527366",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "# Metrics Dataset"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 20,
+   "id": "36152ce0",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:09:57.569703Z",
+     "iopub.status.busy": "2024-10-06T19:09:57.568818Z",
+     "iopub.status.idle": "2024-10-06T19:09:57.575251Z",
+     "shell.execute_reply": "2024-10-06T19:09:57.574270Z"
+    },
+    "papermill": {
+     "duration": 0.024397,
+     "end_time": "2024-10-06T19:09:57.577567",
+     "exception": false,
+     "start_time": "2024-10-06T19:09:57.553170",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "import time\n",
+    "\n",
+    "def time_wrapper(func):\n",
+    "    def wrapper(*args, **kwargs):\n",
+    "        start_time = time.time()  # Record the start time\n",
+    "        result = func(*args, **kwargs)  # Call the original function\n",
+    "        end_time = time.time()  # Record the end time\n",
+    "        print(f\"Execution time: {end_time - start_time:.4f} seconds\")\n",
+    "        return result\n",
+    "    return wrapper"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 21,
+   "id": "4bb39adf",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:09:57.609513Z",
+     "iopub.status.busy": "2024-10-06T19:09:57.609204Z",
+     "iopub.status.idle": "2024-10-06T19:09:57.615233Z",
+     "shell.execute_reply": "2024-10-06T19:09:57.614245Z"
+    },
+    "papermill": {
+     "duration": 0.024922,
+     "end_time": "2024-10-06T19:09:57.617757",
+     "exception": false,
+     "start_time": "2024-10-06T19:09:57.592835",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "def apply_format(seq):\n",
+    "    prompt = \"Instruction:\\n{instruction}\\n\\nResponse:\\n{response}\".format(\n",
+    "            instruction=f\"Predict the next chess move in the sequence {str(list(seq))}\",\n",
+    "            response=\"\",\n",
+    "        )\n",
+    "    return prompt\n",
+    "\n",
+    "\n",
+    "@time_wrapper\n",
+    "def batch_prompt(seq_list):\n",
+    "    batch_prompts = list(map(apply_format, seq_list))\n",
+    "    \n",
+    "    output = gemma_lm.generate(batch_prompts, max_length=64)\n",
+    "    #print(output)\n",
+    "    #seq.append(output.split(' ')[-1].strip(\"'\"))\n",
+    "    #print(output)\n",
+    "    return output\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 22,
+   "id": "f20355d0",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:09:57.649170Z",
+     "iopub.status.busy": "2024-10-06T19:09:57.648819Z",
+     "iopub.status.idle": "2024-10-06T19:09:57.654946Z",
+     "shell.execute_reply": "2024-10-06T19:09:57.653897Z"
+    },
+    "papermill": {
+     "duration": 0.024417,
+     "end_time": "2024-10-06T19:09:57.657224",
+     "exception": false,
+     "start_time": "2024-10-06T19:09:57.632807",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[1, 2, 3]\n",
+      "[4, 5, 6, 7, 8]\n"
+     ]
+    }
+   ],
+   "source": [
+    "def remove_and_return(lst, n):\n",
+    "    result = lst[:n]\n",
+    "    del lst[:n]\n",
+    "    \n",
+    "    return result\n",
+    "\n",
+    "my_list = [1, 2, 3, 4, 5, 6, 7, 8]\n",
+    "print(remove_and_return(my_list, 3))  # Output: [1, 2, 3]\n",
+    "print(my_list)  # Output: [4, 5]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 23,
+   "id": "2ccc8a8d",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:09:57.684213Z",
+     "iopub.status.busy": "2024-10-06T19:09:57.683910Z",
+     "iopub.status.idle": "2024-10-06T19:09:57.688816Z",
+     "shell.execute_reply": "2024-10-06T19:09:57.687984Z"
+    },
+    "papermill": {
+     "duration": 0.020511,
+     "end_time": "2024-10-06T19:09:57.690733",
+     "exception": false,
+     "start_time": "2024-10-06T19:09:57.670222",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "def segment_all(seq_list, batch_size):\n",
+    "    data = seq_list.copy()\n",
+    "    final_output = []\n",
+    "    while len(data) > 0:\n",
+    "        batch = remove_and_return(data, batch_size)\n",
+    "        final_output.append(batch)\n",
+    "    return final_output\n",
+    "        \n",
+    "        \n",
+    "# test = segment_all(list(intersect)[:1000], 300)\n",
+    "\n",
+    "# print(len(test))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 24,
+   "id": "08dbb35c",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:09:57.717850Z",
+     "iopub.status.busy": "2024-10-06T19:09:57.717568Z",
+     "iopub.status.idle": "2024-10-06T19:09:57.722304Z",
+     "shell.execute_reply": "2024-10-06T19:09:57.721431Z"
+    },
+    "papermill": {
+     "duration": 0.020588,
+     "end_time": "2024-10-06T19:09:57.724285",
+     "exception": false,
+     "start_time": "2024-10-06T19:09:57.703697",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "def run_all(seq_set, n):\n",
+    "    all_res = []\n",
+    "    segments = segment_all(list(seq_set), n)\n",
+    "    for sample in segments:\n",
+    "        res = batch_prompt(sample)\n",
+    "        all_res.append((sample,  res))\n",
+    "    return all_res"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 25,
+   "id": "b6382cf1",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:09:57.751238Z",
+     "iopub.status.busy": "2024-10-06T19:09:57.750932Z",
+     "iopub.status.idle": "2024-10-06T19:17:33.228791Z",
+     "shell.execute_reply": "2024-10-06T19:17:33.227536Z"
+    },
+    "papermill": {
+     "duration": 455.493911,
+     "end_time": "2024-10-06T19:17:33.231187",
+     "exception": false,
+     "start_time": "2024-10-06T19:09:57.737276",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Execution time: 41.0484 seconds\n",
+      "Execution time: 15.5490 seconds\n",
+      "Execution time: 15.5936 seconds\n",
+      "Execution time: 15.0041 seconds\n",
+      "Execution time: 15.4686 seconds\n",
+      "Execution time: 14.7983 seconds\n",
+      "Execution time: 15.0200 seconds\n",
+      "Execution time: 15.6826 seconds\n",
+      "Execution time: 15.9007 seconds\n",
+      "Execution time: 14.7778 seconds\n",
+      "Execution time: 15.6745 seconds\n",
+      "Execution time: 15.8843 seconds\n",
+      "Execution time: 14.7681 seconds\n",
+      "Execution time: 15.8926 seconds\n",
+      "Execution time: 15.2342 seconds\n",
+      "Execution time: 15.0056 seconds\n",
+      "Execution time: 15.9032 seconds\n",
+      "Execution time: 15.6695 seconds\n",
+      "Execution time: 15.6589 seconds\n",
+      "Execution time: 15.6671 seconds\n",
+      "Execution time: 15.0181 seconds\n",
+      "Execution time: 15.2112 seconds\n",
+      "Execution time: 15.2221 seconds\n",
+      "Execution time: 15.6676 seconds\n",
+      "Execution time: 14.9972 seconds\n",
+      "Execution time: 14.9946 seconds\n",
+      "Execution time: 16.1120 seconds\n",
+      "Execution time: 14.0457 seconds\n",
+      "28\n"
+     ]
+    }
+   ],
+   "source": [
+    "inter_res = run_all(intersect, 300)\n",
+    "\n",
+    "print(len(inter_res))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 26,
+   "id": "7f3e61ed",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:17:33.263383Z",
+     "iopub.status.busy": "2024-10-06T19:17:33.263017Z",
+     "iopub.status.idle": "2024-10-06T19:17:33.268165Z",
+     "shell.execute_reply": "2024-10-06T19:17:33.267249Z"
+    },
+    "papermill": {
+     "duration": 0.023882,
+     "end_time": "2024-10-06T19:17:33.270451",
+     "exception": false,
+     "start_time": "2024-10-06T19:17:33.246569",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "('c4', 'e5', 'e3', 'Nf6', 'Nc3')\n",
+      "Instruction:\n",
+      "Predict the next chess move in the sequence ['c4', 'e5', 'e3', 'Nf6', 'Nc3']\n",
+      "\n",
+      "Response:\n",
+      "The next move is 'd5'\n"
+     ]
+    }
+   ],
+   "source": [
+    "n_sample = 22\n",
+    "print(inter_res[0][0][n_sample])\n",
+    "print(inter_res[0][1][n_sample])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 27,
+   "id": "47583b47",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:17:33.301769Z",
+     "iopub.status.busy": "2024-10-06T19:17:33.301459Z",
+     "iopub.status.idle": "2024-10-06T19:36:45.637244Z",
+     "shell.execute_reply": "2024-10-06T19:36:45.636245Z"
+    },
+    "papermill": {
+     "duration": 1152.37412,
+     "end_time": "2024-10-06T19:36:45.659644",
+     "exception": false,
+     "start_time": "2024-10-06T19:17:33.285524",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Execution time: 14.7639 seconds\n",
+      "Execution time: 13.9162 seconds\n",
+      "Execution time: 13.9175 seconds\n",
+      "Execution time: 15.0143 seconds\n",
+      "Execution time: 13.9172 seconds\n",
+      "Execution time: 14.7899 seconds\n",
+      "Execution time: 13.9093 seconds\n",
+      "Execution time: 13.8882 seconds\n",
+      "Execution time: 14.5517 seconds\n",
+      "Execution time: 14.7769 seconds\n",
+      "Execution time: 14.1240 seconds\n",
+      "Execution time: 14.5665 seconds\n",
+      "Execution time: 14.7839 seconds\n",
+      "Execution time: 13.8991 seconds\n",
+      "Execution time: 13.8891 seconds\n",
+      "Execution time: 13.6751 seconds\n",
+      "Execution time: 14.7923 seconds\n",
+      "Execution time: 14.9976 seconds\n",
+      "Execution time: 13.8964 seconds\n",
+      "Execution time: 14.7822 seconds\n",
+      "Execution time: 14.9969 seconds\n",
+      "Execution time: 13.6634 seconds\n",
+      "Execution time: 14.9918 seconds\n",
+      "Execution time: 13.8914 seconds\n",
+      "Execution time: 13.8906 seconds\n",
+      "Execution time: 13.9032 seconds\n",
+      "Execution time: 13.8908 seconds\n",
+      "Execution time: 14.9917 seconds\n",
+      "Execution time: 13.8948 seconds\n",
+      "Execution time: 13.8891 seconds\n",
+      "Execution time: 15.2216 seconds\n",
+      "Execution time: 13.8814 seconds\n",
+      "Execution time: 14.7803 seconds\n",
+      "Execution time: 14.5395 seconds\n",
+      "Execution time: 14.7665 seconds\n",
+      "Execution time: 13.8731 seconds\n",
+      "Execution time: 14.7657 seconds\n",
+      "Execution time: 13.8975 seconds\n",
+      "Execution time: 14.5539 seconds\n",
+      "Execution time: 14.7718 seconds\n",
+      "Execution time: 14.7715 seconds\n",
+      "Execution time: 14.7742 seconds\n",
+      "Execution time: 14.3398 seconds\n",
+      "Execution time: 13.8869 seconds\n",
+      "Execution time: 13.6926 seconds\n",
+      "Execution time: 13.8991 seconds\n",
+      "Execution time: 14.7887 seconds\n",
+      "Execution time: 13.8889 seconds\n",
+      "Execution time: 13.8828 seconds\n",
+      "Execution time: 14.7749 seconds\n",
+      "Execution time: 13.8858 seconds\n",
+      "Execution time: 14.5615 seconds\n",
+      "Execution time: 14.9813 seconds\n",
+      "Execution time: 14.7713 seconds\n",
+      "Execution time: 14.7753 seconds\n",
+      "Execution time: 13.8912 seconds\n",
+      "Execution time: 14.5653 seconds\n",
+      "Execution time: 14.7809 seconds\n",
+      "Execution time: 14.1058 seconds\n",
+      "Execution time: 14.1111 seconds\n",
+      "Execution time: 14.1159 seconds\n",
+      "Execution time: 13.8804 seconds\n",
+      "Execution time: 13.8794 seconds\n",
+      "Execution time: 13.8819 seconds\n",
+      "Execution time: 14.1029 seconds\n",
+      "Execution time: 14.7643 seconds\n",
+      "Execution time: 14.7741 seconds\n",
+      "Execution time: 14.7730 seconds\n",
+      "Execution time: 14.7672 seconds\n",
+      "Execution time: 14.7794 seconds\n",
+      "Execution time: 13.9045 seconds\n",
+      "Execution time: 13.8898 seconds\n",
+      "Execution time: 14.7785 seconds\n",
+      "Execution time: 14.1245 seconds\n",
+      "Execution time: 13.8974 seconds\n",
+      "Execution time: 13.8676 seconds\n",
+      "Execution time: 15.2097 seconds\n",
+      "Execution time: 13.6510 seconds\n",
+      "Execution time: 14.1096 seconds\n",
+      "Execution time: 20.1352 seconds\n"
+     ]
+    }
+   ],
+   "source": [
+    "high_res = run_all(high_set, 300)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 28,
+   "id": "39840cfb",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:36:45.703126Z",
+     "iopub.status.busy": "2024-10-06T19:36:45.702778Z",
+     "iopub.status.idle": "2024-10-06T19:47:40.466642Z",
+     "shell.execute_reply": "2024-10-06T19:47:40.465613Z"
+    },
+    "papermill": {
+     "duration": 654.81229,
+     "end_time": "2024-10-06T19:47:40.493052",
+     "exception": false,
+     "start_time": "2024-10-06T19:36:45.680762",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Execution time: 13.8996 seconds\n",
+      "Execution time: 13.9194 seconds\n",
+      "Execution time: 13.9170 seconds\n",
+      "Execution time: 13.9030 seconds\n",
+      "Execution time: 15.2541 seconds\n",
+      "Execution time: 14.7943 seconds\n",
+      "Execution time: 15.0226 seconds\n",
+      "Execution time: 14.7769 seconds\n",
+      "Execution time: 14.1165 seconds\n",
+      "Execution time: 14.5736 seconds\n",
+      "Execution time: 14.7838 seconds\n",
+      "Execution time: 13.6873 seconds\n",
+      "Execution time: 14.7748 seconds\n",
+      "Execution time: 14.7706 seconds\n",
+      "Execution time: 14.7877 seconds\n",
+      "Execution time: 14.7754 seconds\n",
+      "Execution time: 14.9956 seconds\n",
+      "Execution time: 15.0022 seconds\n",
+      "Execution time: 14.7869 seconds\n",
+      "Execution time: 14.1165 seconds\n",
+      "Execution time: 14.1142 seconds\n",
+      "Execution time: 14.5507 seconds\n",
+      "Execution time: 14.1061 seconds\n",
+      "Execution time: 14.7766 seconds\n",
+      "Execution time: 14.7728 seconds\n",
+      "Execution time: 14.1142 seconds\n",
+      "Execution time: 14.7666 seconds\n",
+      "Execution time: 14.7835 seconds\n",
+      "Execution time: 14.5647 seconds\n",
+      "Execution time: 13.8785 seconds\n",
+      "Execution time: 14.7812 seconds\n",
+      "Execution time: 14.0992 seconds\n",
+      "Execution time: 14.7809 seconds\n",
+      "Execution time: 14.7675 seconds\n",
+      "Execution time: 14.7590 seconds\n",
+      "Execution time: 15.0107 seconds\n",
+      "Execution time: 14.7804 seconds\n",
+      "Execution time: 14.7839 seconds\n",
+      "Execution time: 14.1090 seconds\n",
+      "Execution time: 14.7855 seconds\n",
+      "Execution time: 14.7796 seconds\n",
+      "Execution time: 13.8855 seconds\n",
+      "Execution time: 14.7696 seconds\n",
+      "Execution time: 14.7756 seconds\n",
+      "Execution time: 14.7999 seconds\n"
+     ]
+    }
+   ],
+   "source": [
+    "low_res = run_all(low_set, 300)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "140ed7d1",
+   "metadata": {
+    "papermill": {
+     "duration": 0.024062,
+     "end_time": "2024-10-06T19:47:40.541804",
+     "exception": false,
+     "start_time": "2024-10-06T19:47:40.517742",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "# Save Results\n",
+    "\n",
+    "Save the output for each given sequence of the type high, low, inter"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 29,
+   "id": "8ca84f0f",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:47:40.593029Z",
+     "iopub.status.busy": "2024-10-06T19:47:40.592671Z",
+     "iopub.status.idle": "2024-10-06T19:47:40.597655Z",
+     "shell.execute_reply": "2024-10-06T19:47:40.596795Z"
+    },
+    "papermill": {
+     "duration": 0.032118,
+     "end_time": "2024-10-06T19:47:40.599432",
+     "exception": false,
+     "start_time": "2024-10-06T19:47:40.567314",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "def to_df(data, name):\n",
+    "    sample_df = pd.DataFrame(data)\n",
+    "    sample_df[\"elo\"] = name\n",
+    "    sample_df.columns = ['seq', 'res', 'elo']\n",
+    "    return sample_df"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 30,
+   "id": "e9007a69",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:47:40.649269Z",
+     "iopub.status.busy": "2024-10-06T19:47:40.648976Z",
+     "iopub.status.idle": "2024-10-06T19:47:40.656478Z",
+     "shell.execute_reply": "2024-10-06T19:47:40.655694Z"
+    },
+    "papermill": {
+     "duration": 0.034278,
+     "end_time": "2024-10-06T19:47:40.658348",
+     "exception": false,
+     "start_time": "2024-10-06T19:47:40.624070",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "inter_df = to_df(inter_res,'inter')\n",
+    "high_df = to_df(high_res,'high')\n",
+    "low_df = to_df(low_res,'low')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 31,
+   "id": "f6ac1674",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:47:40.707845Z",
+     "iopub.status.busy": "2024-10-06T19:47:40.707546Z",
+     "iopub.status.idle": "2024-10-06T19:47:40.712719Z",
+     "shell.execute_reply": "2024-10-06T19:47:40.711886Z"
+    },
+    "papermill": {
+     "duration": 0.031988,
+     "end_time": "2024-10-06T19:47:40.714546",
+     "exception": false,
+     "start_time": "2024-10-06T19:47:40.682558",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "final_df = pd.concat([inter_df, high_df, low_df])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 32,
+   "id": "b4908f53",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-10-06T19:47:40.764586Z",
+     "iopub.status.busy": "2024-10-06T19:47:40.764316Z",
+     "iopub.status.idle": "2024-10-06T19:47:40.809799Z",
+     "shell.execute_reply": "2024-10-06T19:47:40.808699Z"
+    },
+    "papermill": {
+     "duration": 0.073106,
+     "end_time": "2024-10-06T19:47:40.811783",
+     "exception": false,
+     "start_time": "2024-10-06T19:47:40.738677",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "100\n",
+      "gemma_instruct_2b_en\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(tune_size)\n",
+    "print(model_name)\n",
+    "\n",
+    "# file_name = f'lora_infer_{tune_size}.pkl'\n",
+    "final_df.to_pickle(f'/kaggle/working/{file_name}')"
+   ]
+  }
+ ],
+ "metadata": {
+  "kaggle": {
+   "accelerator": "gpu",
+   "dataSources": [
+    {
+     "datasetId": 5790268,
+     "sourceId": 9512215,
+     "sourceType": "datasetVersion"
+    },
+    {
+     "datasetId": 5791295,
+     "sourceId": 9513539,
+     "sourceType": "datasetVersion"
+    },
+    {
+     "datasetId": 5827474,
+     "sourceId": 9562421,
+     "sourceType": "datasetVersion"
+    },
+    {
+     "isSourceIdPinned": true,
+     "modelId": 3533,
+     "modelInstanceId": 5171,
+     "sourceId": 11371,
+     "sourceType": "modelInstanceVersion"
+    },
+    {
+     "isSourceIdPinned": true,
+     "modelId": 3533,
+     "modelInstanceId": 5388,
+     "sourceId": 11372,
+     "sourceType": "modelInstanceVersion"
+    }
+   ],
+   "dockerImageVersionId": 30776,
+   "isGpuEnabled": true,
+   "isInternetEnabled": true,
+   "language": "python",
+   "sourceType": "notebook"
+  },
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.10.14"
+  },
+  "papermill": {
+   "default_parameters": {},
+   "duration": 2362.581265,
+   "end_time": "2024-10-06T19:47:43.849867",
+   "environment_variables": {},
+   "exception": null,
+   "input_path": "__notebook__.ipynb",
+   "output_path": "__notebook__.ipynb",
+   "parameters": {},
+   "start_time": "2024-10-06T19:08:21.268602",
+   "version": "2.6.0"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
